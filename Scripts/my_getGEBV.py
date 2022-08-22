@@ -1,6 +1,0 @@
-GEBVscores = np.average(INDEXp)
-GEBVscores = np.append(GEBVscores,np.average(YieldINDEXp))
-GEBVscores = np.append(GEBVscores,np.average(HeightINDEXp))
-GEBVscores = np.append(GEBVscores,np.average(HeadingINDEXp))
-GEBVscores = np.append(GEBVscores,np.average(TKWINDEXp))
-GEBVscores = np.append(GEBVscores,np.average(ZelenyINDEXp))
