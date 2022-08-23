@@ -33,7 +33,7 @@ def selection_BRUTE(SPLIT, BEST, INDEXp, Oparentsnp, Tparentsnp, Tparentsname, G
 	elif float(SPLIT) == 1: # if SPLIT is 1 then only use the latest generation
 		NEW = int(BEST*float(SPLIT))
 		# make an index to slice the data
-		ID = np.array(list(range(len(INDEXp))))
+		ID = np.arange(len(INDEXp))
 		# select the best parents
 		GE = ID[INDEXp > np.sort(INDEXp)[-(NEW+1)]]
 		# create the dataframe IP which contains parents for diallel crossing

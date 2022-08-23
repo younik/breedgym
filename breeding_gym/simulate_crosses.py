@@ -5,14 +5,14 @@ from .my_getGEBV import my_getGEBV
 from .my_besttenGEBV import my_besttenGEBV
 
 
-def simulate_crosses(IP, IPname, chromosomes, INDEXp, GEBVscores, GEBVbest, TMARnp, BEST, df, dfnp, noffspring, GG, CC, OO):
+def simulate_crosses(IP, IPname, chromosomes, INDEXp, GEBVbest, MAR, BEST, df, noffspring, GG, CC, OO):
 	# make the first cross, to create children
 	# where the best ofspring from each cross will be saved
 	MUM=0
 	DAD=1
 	progenitorsnp = IP[:,(MUM,DAD)]
-	Fpro = my_stackChromosomes(chromosomes, df, dfnp, progenitorsnp, noffspring)
-	INDEXp, YieldINDEXp, HeightINDEXp, HeadingINDEXp, TKWINDEXp, ZelenyINDEXp = my_GEBV(Fpro, TMARnp)
+	Fpro = my_stackChromosomes(chromosomes, df, progenitorsnp, noffspring)
+	INDEXp, YieldINDEXp, HeightINDEXp, HeadingINDEXp, TKWINDEXp, ZelenyINDEXp = my_GEBV(Fpro, MAR)
 	Children = Fpro[:,INDEXp == np.max(INDEXp)]
 	Childnames = np.array(["("+IPname[MUM] +" x "+IPname[DAD]+")"])
 	# now loop the rest of the crosses
@@ -22,8 +22,8 @@ def simulate_crosses(IP, IPname, chromosomes, INDEXp, GEBVscores, GEBVbest, TMAR
 			if MUM == 0 and DAD ==1: # eliminate the first cross from the loop
 				break		
 			progenitorsnp = IP[:,(MUM,DAD)]
-			Fpro = my_stackChromosomes(chromosomes, df, dfnp, progenitorsnp, noffspring) # make the cross
-			INDEXp, YieldINDEXp, HeightINDEXp, HeadingINDEXp, TKWINDEXp, ZelenyINDEXp = my_GEBV(Fpro, TMARnp) # calculate GEBV
+			Fpro = my_stackChromosomes(chromosomes, df, progenitorsnp, noffspring) # make the cross
+			INDEXp, YieldINDEXp, HeightINDEXp, HeadingINDEXp, TKWINDEXp, ZelenyINDEXp = my_GEBV(Fpro, MAR) # calculate GEBV
 			# only select the best offspirng
 			PO = Fpro[:,INDEXp == np.max(INDEXp)]
 			# add this offspring to the next generation
@@ -34,7 +34,7 @@ def simulate_crosses(IP, IPname, chromosomes, INDEXp, GEBVscores, GEBVbest, TMAR
 	# get scores
 	Fpro = Children
 
-	INDEXp, YieldINDEXp, HeightINDEXp, HeadingINDEXp, TKWINDEXp, ZelenyINDEXp = my_GEBV(Fpro, TMARnp)
+	INDEXp, YieldINDEXp, HeightINDEXp, HeadingINDEXp, TKWINDEXp, ZelenyINDEXp = my_GEBV(Fpro, MAR)
 	GEBVscores = my_getGEBV(INDEXp, YieldINDEXp, HeightINDEXp, HeadingINDEXp, TKWINDEXp, ZelenyINDEXp)
 
 	# add the data to the existing data
