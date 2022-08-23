@@ -5,7 +5,7 @@ from .my_getGEBV import my_getGEBV
 from .my_besttenGEBV import my_besttenGEBV
 
 
-def simulate_crosses(IP, IPname, chromosomes, INDEXp, GEBVscores, GEBVbest, TMARnp, BEST, df, dfnp, noffspring):
+def simulate_crosses(IP, IPname, chromosomes, INDEXp, GEBVscores, GEBVbest, TMARnp, BEST, df, dfnp, noffspring, GG, CC, OO):
 	# make the first cross, to create children
 	# where the best ofspring from each cross will be saved
 	MUM=0
@@ -49,7 +49,7 @@ def simulate_crosses(IP, IPname, chromosomes, INDEXp, GEBVscores, GEBVbest, TMAR
 	Tparentsname=Childnames
 
 	ID = np.array(list(range(len(INDEXp))))
-	GEBVbest = my_besttenGEBV(ID, INDEXp, BEST, YieldINDEXp, HeightINDEXp, HeadingINDEXp, TKWINDEXp, ZelenyINDEXp, Childnames)
+	GEBVbest, GE = my_besttenGEBV(ID, INDEXp, BEST, YieldINDEXp, HeightINDEXp, HeadingINDEXp, TKWINDEXp, ZelenyINDEXp, Childnames)
 	OO = np.vstack((OO,GEBVbest.T))
 
-	return GG, CC, OO, Tparentsnp, Tparentsname
+	return GG, CC, OO, Tparentsnp, Tparentsname, INDEXp, GE

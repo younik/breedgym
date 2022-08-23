@@ -10,7 +10,9 @@ from .simulate_crosses import simulate_crosses
 import sys
 
 
-def main(OUTFILE, BS, NOF, SPLIT):
+def main(OUTFILE, BS, NOF, SPLIT, seed=None):
+	np.random.seed(seed)
+
 	############################################
 	############################################
 	# load the data
@@ -65,7 +67,7 @@ def main(OUTFILE, BS, NOF, SPLIT):
 	# select the best ten parents
 	Tparentsname = Tparents.columns.values
 	Childnames=Tparentsname
-	GEBVbest = my_besttenGEBV(ID, INDEXp, BEST, YieldINDEXp, HeightINDEXp, HeadingINDEXp, TKWINDEXp, ZelenyINDEXp, Childnames)
+	GEBVbest, GE = my_besttenGEBV(ID, INDEXp, BEST, YieldINDEXp, HeightINDEXp, HeadingINDEXp, TKWINDEXp, ZelenyINDEXp, Childnames)
 
 	OO = GEBVbest.T
 
@@ -86,13 +88,13 @@ def main(OUTFILE, BS, NOF, SPLIT):
 
 	n_generations = 10
 	for _ in range(n_generations):
-		IP, INDEXp, IPname = selection_BRUTE(SPLIT, BEST, INDEXp, Oparentsnp, Tparentsnp, Tparentsname)
-		GG, CC, OO, Tparentsnp, Tparentsname = simulate_crosses(IP, IPname, chromosomes, INDEXp, GEBVscores, GEBVbest, TMARnp, BEST, df, dfnp, noffspring)
+		IP, INDEXp, IPname = selection_BRUTE(SPLIT, BEST, INDEXp, Oparentsnp, Tparentsnp, Tparentsname, GE)
+		GG, CC, OO, Tparentsnp, Tparentsname, INDEXp, GE = simulate_crosses(IP, IPname, chromosomes, INDEXp, GEBVscores, GEBVbest, TMARnp, BEST, df, dfnp, noffspring, GG, CC, OO)
 		
 	OUT = np.hstack((GG,CC))
 
 	np.savetxt(OUTFILE, OUT)
-	np.savetxt(OUTFILE.replace("Outfile","Offspring"), OO, fmt='%s')
+	np.savetxt(OUTFILE.replace("Outfile","Offspring"), OO, fmt='%s', delimiter=',')
 
 
 if __name__ == "__main__":

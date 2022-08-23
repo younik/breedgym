@@ -10,4 +10,4 @@ def my_besttenGEBV(ID, INDEXp, BEST, YieldINDEXp, HeightINDEXp, HeadingINDEXp, T
     GEBVbest = np.vstack((GEBVbest,ZelenyINDEXp[GE]))
     GEBVbest = np.vstack((GEBVbest,Childnames[GE]))
 
-    return GEBVbest
+    return GEBVbest, GE

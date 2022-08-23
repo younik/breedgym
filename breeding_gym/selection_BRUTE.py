@@ -2,7 +2,7 @@ import numpy as np
 from numpy import random
 
 
-def selection_BRUTE(SPLIT, BEST, INDEXp, Oparentsnp, Tparentsnp, Tparentsname):
+def selection_BRUTE(SPLIT, BEST, INDEXp, Oparentsnp, Tparentsnp, Tparentsname, GE):
 	if float(SPLIT) > 0 and float(SPLIT) < 1:
 		NEW = int(BEST*float(SPLIT))
 		OLD = int(BEST-(BEST*float(SPLIT)))
