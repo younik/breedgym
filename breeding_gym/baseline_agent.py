@@ -11,8 +11,9 @@ class BaselineAgent:
         self.n_offspring = n_offspring
         self.f_index = f_index
 
-    def __call__(self, population, GEBV, corrcoef):
+    def __call__(self, GEBV):
         indices = self.f_index(GEBV)
+        
         # retrieve the self.best population indices
         best_pop = np.argpartition(indices, -self.best)[-self.best:]
         
