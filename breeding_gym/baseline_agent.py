@@ -17,7 +17,11 @@ class BaselineAgent:
         # retrieve the self.best population indices
         best_pop = np.argpartition(indices, -self.best)[-self.best:]
         
-        action = np.array(np.meshgrid(best_pop, best_pop)).reshape(2, -1).T
+        mesh1, mesh2 = np.meshgrid(best_pop, best_pop)
+        triu_indices = np.triu_indices(self.best, k=1)
+        mesh1 = mesh1[triu_indices]
+        mesh2 = mesh2[triu_indices]
+        action = np.stack([mesh1, mesh2], axis=1)
         action = np.repeat(action, self.n_offspring, axis=0)
 
         return action
