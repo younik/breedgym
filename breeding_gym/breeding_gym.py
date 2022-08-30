@@ -1,4 +1,3 @@
-from typing import Any
 import gym
 from gym import spaces
 import pandas as pd
@@ -62,13 +61,13 @@ class BreedingGym(gym.Env):
                 breaking_points[0, self.pred_chr] < self.pred[:, None], 
                 breaking_points[1, self.pred_chr] > self.pred[:, None]
         ).T
+        second_parent_mask = np.ascontiguousarray(second_parent_mask)
         progenies[second_parent_mask] = parents[arange_parents, 1 - first_parent][second_parent_mask]
 
         return progenies
 
     def _get_info(self):
-        return {"GEBV": self.GEBV(),
-                "corrcoef": self.corrcoef()}
+        return {"GEBV": self.GEBV()}
 
     def GEBV(self):
         """
