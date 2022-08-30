@@ -24,6 +24,7 @@ class BreedingGym(gym.Env):
         population_df = pd.read_table(population, low_memory=False)
         self.population = population_df.to_numpy()
         self.population = (self.population * 2).astype(np.int8)
+        self.germplasm = self.population
         self.marker_effects = pd.read_table(marker_effects, sep="\t", index_col="Name")
 
         self.pred = self.chromosomes_map['pred'].to_numpy()
@@ -33,7 +34,7 @@ class BreedingGym(gym.Env):
 
     def reset(self, seed=None, return_info=False, options=None):
         super().reset(seed=seed)
-
+        self.population = self.germplasm
         if return_info:
             return self.population, self._get_info()
         else:
@@ -66,7 +67,8 @@ class BreedingGym(gym.Env):
         return progenies
 
     def _get_info(self):
-        return {"GEBV": self.GEBV()} #, "corrcoef": self.corrcoef()}
+        return {"GEBV": self.GEBV(),
+                "corrcoef": self.corrcoef()}
 
     def GEBV(self):
         """
