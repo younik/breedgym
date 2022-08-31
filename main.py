@@ -29,10 +29,16 @@ if __name__ == '__main__':
         agent = BaselineAgent(n_offspring=n_offspring)
         pop, info = env.reset(return_info=True)
         for i in np.arange(num_generations):
-            pop, r, terminated, truncated, info = env.step(agent(info["GEBV"]))
+            action = agent(info["GEBV"])
+            pop, r, terminated, truncated, info = env.step(action)
 
             positions = [i + 1 + (offset - 1) / 5]
-            bp = axs[0].boxplot(info["GEBV"][:, 0], positions=positions, flierprops={'markersize': 2})
+            yield_ = info["GEBV"][:, 0]
+            bp = axs[0].boxplot(
+                yield_,
+                positions=positions,
+                flierprops={'markersize': 2}
+            )
             for element in boxplot_elements:
                 plt.setp(bp[element], color=c)
 
@@ -40,7 +46,11 @@ if __name__ == '__main__':
             print("GEBV:", mean_GEBV)
 
             corrcoeff = env.corrcoef()[:, 0]
-            bp = axs[1].boxplot(1 - corrcoeff, positions=positions, flierprops={'markersize': 2})
+            bp = axs[1].boxplot(
+                1 - corrcoeff,
+                positions=positions,
+                flierprops={'markersize': 2}
+            )
             for element in boxplot_elements:
                 plt.setp(bp[element], color=c)
 
@@ -53,8 +63,9 @@ if __name__ == '__main__':
     axs[1].grid(axis='y')
     axs[0].set_xlabel('Generations [Years]')
     axs[0].xaxis.set_label_coords(1.1, -0.07)
-    
-    patches = [mpatches.Rectangle((0, 1), color=c, label=o, width=0.1, height=0.1, fill=False)
+
+    rectangle_kwargs = {"width": 0.1, "height": 0.1, "fill": False}
+    patches = [mpatches.Rectangle((0, 1), color=c, label=o, **rectangle_kwargs)
                for o, c in zip(n_offsprings, colors)]
     axs[1].legend(handles=patches, loc='upper right')
 
