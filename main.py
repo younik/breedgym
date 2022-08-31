@@ -1,34 +1,47 @@
 from breeding_gym.baseline_agent import BaselineAgent
-from breeding_gym.paths import DATA_PATH
 import gym
 import numpy as np
 import matplotlib.pyplot as plt
 
 
 if __name__ == '__main__':
-    env = gym.make("BreedingGym",
-                   chromosomes_map=DATA_PATH.joinpath("map.txt"),
-                   population=DATA_PATH.joinpath("geno.txt"),
-                   marker_effects=DATA_PATH.joinpath("marker_effects.txt"),
-                   new_step_api=True)
+    env = gym.make("BreedingGym", new_step_api=True)
 
     num_generations = 10
+    offspring_list = [10, 20, 50]
+    colors = ['b', 'g', 'r']
+
+    boxplot_elements = [
+        'boxes',
+        'whiskers',
+        'fliers',
+        'means',
+        'medians',
+        'caps'
+    ]
+
     fig, axs = plt.subplots(1, 2)
 
-    for offset, (n_offspring, c) in enumerate(zip([10, 20, 50], ['b', 'g', 'r'])):
+    for offset, (n_offspring, c) in enumerate(zip(offspring_list, colors)):
         agent = BaselineAgent(n_offspring=n_offspring)
         pop, info = env.reset(return_info=True)
         for i in np.arange(num_generations):
             pop, r, terminated, truncated, info = env.step(agent(info["GEBV"]))
-            bp = axs[0].boxplot(info["GEBV"][:, 0], positions=[i+1 + (offset-1)/5])
-            for element in ['boxes', 'whiskers', 'fliers', 'means', 'medians', 'caps']:
-                plt.setp(bp[element], color=c)
-            mean_GEBV = np.mean(info["GEBV"], axis=0)
-            print("GEBV:", mean_GEBV)
-            bp = axs[1].boxplot(info["corrcoef"][:, 0], positions=[i + 1 + (offset - 1) / 5])
-            for element in ['boxes', 'whiskers', 'fliers', 'means', 'medians', 'caps']:
+
+            yield_ = info["GEBV"][:, 0]
+            bp = axs[0].boxplot(yield_, positions=[i + 1 + (offset - 1) / 5])
+            for element in boxplot_elements:
                 plt.setp(bp[element], color=c)
 
-    axs[0].set_xticks(np.arange(num_generations)+1, np.arange(num_generations)+1)
-    axs[1].set_xticks(np.arange(num_generations)+1, np.arange(num_generations)+1)
+            mean_GEBV = np.mean(info["GEBV"], axis=0)
+            print("GEBV:", mean_GEBV)
+
+            corrcoef = env.corrcoef()[:, 0]
+            bp = axs[1].boxplot(corrcoef, positions=[i + 1 + (offset - 1) / 5])
+            for element in boxplot_elements:
+                plt.setp(bp[element], color=c)
+
+    xticks = np.arange(num_generations) + 1
+    axs[0].set_xticks(xticks, xticks)
+    axs[1].set_xticks(xticks, xticks)
     plt.show()
