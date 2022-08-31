@@ -1,16 +1,21 @@
 from breeding_gym.baseline_agent import BaselineAgent
+from breeding_gym.paths import FIGURE_PATH
+from breeding_gym.plot_utils import set_up_plt, NEURIPS_FONT_FAMILY
 import gym
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 
 if __name__ == '__main__':
     env = gym.make("BreedingGym", new_step_api=True)
 
     num_generations = 10
-    offspring_list = [10, 20, 50]
-    colors = ['b', 'g', 'r']
+    n_offsprings = [10, 50, 100]
 
+    set_up_plt(NEURIPS_FONT_FAMILY)
+    fig, axs = plt.subplots(1, 2, figsize=(8, 4))
+    colors = ['b', 'g', 'r']
     boxplot_elements = [
         'boxes',
         'whiskers',
@@ -20,28 +25,38 @@ if __name__ == '__main__':
         'caps'
     ]
 
-    fig, axs = plt.subplots(1, 2)
-
-    for offset, (n_offspring, c) in enumerate(zip(offspring_list, colors)):
+    for offset, (n_offspring, c) in enumerate(zip(n_offsprings, colors)):
         agent = BaselineAgent(n_offspring=n_offspring)
         pop, info = env.reset(return_info=True)
         for i in np.arange(num_generations):
             pop, r, terminated, truncated, info = env.step(agent(info["GEBV"]))
 
-            yield_ = info["GEBV"][:, 0]
-            bp = axs[0].boxplot(yield_, positions=[i + 1 + (offset - 1) / 5])
+            positions = [i + 1 + (offset - 1) / 5]
+            bp = axs[0].boxplot(info["GEBV"][:, 0], positions=positions, flierprops={'markersize': 2})
             for element in boxplot_elements:
                 plt.setp(bp[element], color=c)
 
             mean_GEBV = np.mean(info["GEBV"], axis=0)
             print("GEBV:", mean_GEBV)
 
-            corrcoef = env.corrcoef()[:, 0]
-            bp = axs[1].boxplot(corrcoef, positions=[i + 1 + (offset - 1) / 5])
+            corrcoeff = env.corrcoef()[:, 0]
+            bp = axs[1].boxplot(1 - corrcoeff, positions=positions, flierprops={'markersize': 2})
             for element in boxplot_elements:
                 plt.setp(bp[element], color=c)
 
     xticks = np.arange(num_generations) + 1
     axs[0].set_xticks(xticks, xticks)
     axs[1].set_xticks(xticks, xticks)
+    axs[0].set_title('Crop Yield [Ton/ha]')
+    axs[1].set_title('Genetic variability of population')
+    axs[0].grid(axis='y')
+    axs[1].grid(axis='y')
+    axs[0].set_xlabel('Generations [Years]')
+    axs[0].xaxis.set_label_coords(1.1, -0.07)
+    
+    patches = [mpatches.Rectangle((0, 1), color=c, label=o, width=0.1, height=0.1, fill=False)
+               for o, c in zip(n_offsprings, colors)]
+    axs[1].legend(handles=patches, loc='upper right')
+
+    plt.savefig(FIGURE_PATH.joinpath('boxplots.png'), bbox_inches='tight')
     plt.show()
