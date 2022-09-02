@@ -1,13 +1,29 @@
 import gym
-import breeding_gym  # noqa: F401
 import numpy as np
+from breeding_gym.utils.plot_utils import set_up_plt, NEURIPS_FONT_FAMILY
 
-env = gym.make("SimplifiedBreedingGym", new_step_api=True)
 
-pop, info = env.reset(return_info=True)
+if __name__ == '__main__':
+    num_generations = 3
+    bests = [10, 67, 23]
+    episode_names = [f"{b} bests" for b in bests]
 
-for _ in range(10):
-    pop, r, terminated, truncated, info = env.step(10)
-    mean_GEBV = np.mean(info["GEBV"], axis=0)
-    print("GEBV:", mean_GEBV)
-    # print("Index:", default_f_index(mean_GEBV[None, :]))
+    env = gym.make("SimplifiedBreedingGym", 
+                   render_mode="matplotlib",
+                   render_kwargs={"episode_names": episode_names},
+                   new_step_api=True
+                   )
+
+    set_up_plt(NEURIPS_FONT_FAMILY)
+
+    for action in bests:
+        pop, info = env.reset(return_info=True)
+
+        for i in np.arange(num_generations):
+            pop, r, terminated, truncated, info = env.step(action)
+
+            mean_GEBV = np.mean(info["GEBV"], axis=0)
+            print("------- GEBV -------")
+            print(mean_GEBV)
+
+    env.render()
