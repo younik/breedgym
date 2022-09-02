@@ -1,6 +1,5 @@
-from breeding_gym.baseline_agent import BaselineAgent
-from breeding_gym.paths import FIGURE_PATH
-from breeding_gym.plot_utils import set_up_plt, NEURIPS_FONT_FAMILY
+from breeding_gym.utils.paths import FIGURE_PATH
+from breeding_gym.utils.plot_utils import set_up_plt, NEURIPS_FONT_FAMILY
 import gym
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,14 +7,23 @@ import matplotlib.patches as mpatches
 
 
 if __name__ == '__main__':
-    env = gym.make("BreedingGym", new_step_api=True)
+    env = gym.make("SimplifiedBreedingGym", new_step_api=True)
 
     num_generations = 10
-    n_offsprings = [10, 50, 100]
+    experiments = [
+        {
+            'best': 10,
+            'color': 'b'
+        },
+        {
+            'best': 67,
+            'color': 'g'
+        }
+    ]
 
     set_up_plt(NEURIPS_FONT_FAMILY)
     fig, axs = plt.subplots(1, 2, figsize=(8, 4))
-    colors = ['b', 'g', 'r']
+
     boxplot_elements = [
         'boxes',
         'whiskers',
@@ -25,12 +33,11 @@ if __name__ == '__main__':
         'caps'
     ]
 
-    for offset, (n_offspring, c) in enumerate(zip(n_offsprings, colors)):
-        agent = BaselineAgent(n_offspring=n_offspring)
+    for offset, hyperparams in enumerate(experiments):
         pop, info = env.reset(return_info=True)
+
         for i in np.arange(num_generations):
-            action = agent(info["GEBV"])
-            pop, r, terminated, truncated, info = env.step(action)
+            pop, r, terminated, truncated, info = env.step(hyperparams["best"])
 
             positions = [i + 1 + (offset - 1) / 5]
             yield_ = info["GEBV"][:, 0]
@@ -40,7 +47,7 @@ if __name__ == '__main__':
                 flierprops={'markersize': 2}
             )
             for element in boxplot_elements:
-                plt.setp(bp[element], color=c)
+                plt.setp(bp[element], color=hyperparams["color"])
 
             mean_GEBV = np.mean(info["GEBV"], axis=0)
             print("GEBV:", mean_GEBV)
@@ -52,7 +59,7 @@ if __name__ == '__main__':
                 flierprops={'markersize': 2}
             )
             for element in boxplot_elements:
-                plt.setp(bp[element], color=c)
+                plt.setp(bp[element], color=hyperparams["color"])
 
     xticks = np.arange(num_generations) + 1
     axs[0].set_xticks(xticks, xticks)
@@ -65,8 +72,12 @@ if __name__ == '__main__':
     axs[0].xaxis.set_label_coords(1.1, -0.07)
 
     rectangle_kwargs = {"width": 0.1, "height": 0.1, "fill": False}
-    patches = [mpatches.Rectangle((0, 1), color=c, label=o, **rectangle_kwargs)
-               for o, c in zip(n_offsprings, colors)]
+    patches = [mpatches.Rectangle((0, 1),
+                                  color=exp["color"],
+                                  label=exp["best"],
+                                  **rectangle_kwargs
+                                  )
+               for exp in experiments]
     axs[1].legend(handles=patches, loc='upper right')
 
     plt.savefig(FIGURE_PATH.joinpath('boxplots.png'), bbox_inches='tight')
