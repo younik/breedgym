@@ -8,7 +8,7 @@ if __name__ == '__main__':
     bests = [10, 67, 23]
     episode_names = [f"{b} bests" for b in bests]
 
-    env = gym.make("SimplifiedBreedingGym", 
+    env = gym.make("SimplifiedBreedingGym",
                    render_mode="matplotlib",
                    render_kwargs={"episode_names": episode_names},
                    new_step_api=True

@@ -88,8 +88,12 @@ class BreedingGym(gym.Env):
         else:
             self.population = self.germplasm
 
+        info = self._get_info()
+        if self.render_mode is not None:
+            self._render_step(info)
+
         if return_info:
-            return self.population, self._get_info()
+            return self.population, info
         else:
             return self.population
 
@@ -148,13 +152,13 @@ class BreedingGym(gym.Env):
 
     def render(self, file_name=None):
         if self.render_mode is not None:
-            xticks = np.arange(self.step_idx) + 1
+            xticks = np.arange(self.step_idx + 1)
 
             titles = self.render_kwargs["traits"]
             if self.render_kwargs["corrcoef"]:
                 titles = self.render_kwargs["traits"] + ["Corrcoef"]
             for ax, title in zip(self.axs, titles):
-                ax.set_xticks(xticks, xticks)
+                ax.set_xticks(xticks + self.episode_idx / 12, xticks)
                 ax.set_title(title)
                 ax.grid(axis='y')
                 ax.set_xlabel('Generations [Years]')
