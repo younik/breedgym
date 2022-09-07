@@ -4,7 +4,7 @@ from breeding_gym.utils.plot_utils import set_up_plt, NEURIPS_FONT_FAMILY
 
 
 if __name__ == '__main__':
-    num_generations = 3
+    num_generations = 10
     bests = [10, 67, 23]
     episode_names = [f"{b} bests" for b in bests]
 
