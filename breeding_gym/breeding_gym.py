@@ -1,9 +1,10 @@
 from math import sqrt, ceil, floor
 import gym
 from gym import spaces
-import pandas as pd
 import numpy as np
+from breeding_gym.simulator.simulator import BreedingSimulator
 from breeding_gym.utils.paths import DATA_PATH
+from breeding_gym.utils.plot_utils import set_up_plt, NEURIPS_FONT_FAMILY
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
@@ -15,11 +16,10 @@ class BreedingGym(gym.Env):
 
     def __init__(
         self,
-        chromosomes_map=DATA_PATH.joinpath("map.txt"),
         initial_population=DATA_PATH.joinpath("geno.txt"),
-        marker_effects=DATA_PATH.joinpath("marker_effects.txt"),
         render_mode=None,
-        render_kwargs={}
+        render_kwargs={},
+        **kwargs
     ):
         self.observation_space = spaces.Sequence(
             spaces.Box(0, 1, shape=(19864,))
@@ -31,34 +31,13 @@ class BreedingGym(gym.Env):
             ))
         )
 
+        self.simulator = BreedingSimulator(**kwargs)
         self.germplasm = np.loadtxt(initial_population, dtype='bool')
         self.germplasm = self.germplasm.reshape(self.germplasm.shape[0], -1, 2)
-        self.n_markers = self.germplasm.shape[1]
 
         self.population = None
         self._GEBV, self._GEBV_cache = None, False
         self._corrcoef, self._corrcoef_cache = None, False
-
-        marker_effects_df = pd.read_table(
-            marker_effects, sep="\t", index_col="Name"
-        )
-        self.trait_names = list(marker_effects_df.columns)
-        self.marker_effects = marker_effects_df.to_numpy(np.float32)
-        assert len(self.marker_effects) == self.n_markers
-
-        self.chr_map = pd.read_table(chromosomes_map, sep="\t")
-        self.pred = self.chr_map['pred'].to_numpy()
-        self.marker_chr, self.chr_set = self.chr_map['CHR.PHYS'].factorize()
-        chr_phys_group = self.chr_map.groupby('CHR.PHYS')
-        self.chr_sizes = chr_phys_group['pred'].max().to_numpy()
-
-        self.recombination_vectors = []
-        for chr_idx in range(len(self.chr_set)):
-            marker_in_chr = np.count_nonzero(self.marker_chr == chr_idx)
-            prob = 1.5 / marker_in_chr
-            r = np.full(marker_in_chr, prob)
-            r[0] = 0.5  # first element should be equally likely
-            self.recombination_vectors.append(r)
 
         self.step_idx = None
         self.episode_idx = -1
@@ -68,8 +47,9 @@ class BreedingGym(gym.Env):
             self.render_kwargs.setdefault("colors", ["b", "g", "r", "c", "m"])
             self.render_kwargs.setdefault("offset", 0)
             self.render_kwargs.setdefault("corrcoef", True)
-            self.render_kwargs.setdefault("traits", self.trait_names)
+            self.render_kwargs.setdefault("traits", self.simulator.trait_names)
             self.render_kwargs.setdefault("episode_names", "Episode {:d}")
+            self.render_kwargs.setdefault("font", NEURIPS_FONT_FAMILY)
             self.axs = self._make_axs()
 
     def _make_axs(self):
@@ -112,7 +92,7 @@ class BreedingGym(gym.Env):
            Each row contains a couple of parent indices.
         """
         parents = self.population[action]  # n x 2 x markers x 2
-        self.population = self._make_crosses(parents)
+        self.population = self.simulator.cross(parents)
         self.step_idx += 1
 
         info = self._get_info()
@@ -121,40 +101,6 @@ class BreedingGym(gym.Env):
 
         reward = np.mean(info["GEBV"]["Yield"])
         return self.population, reward, False, False, info
-
-    def _make_crosses(self, parents):
-        n_progenies = parents.shape[0]
-        arange_prog = np.arange(n_progenies).reshape(-1, 1)
-
-        progenies = np.empty(
-            shape=(n_progenies, self.n_markers, 2),
-            dtype='bool'
-        )
-        for chr_idx in range(len(self.chr_set)):
-            crossover_mask = self._get_crossover_mask(n_progenies, chr_idx)
-            marker_mask = self.marker_chr == chr_idx
-
-            parent_0 = parents[:, 0, marker_mask]
-            arange_markers = np.arange(parent_0.shape[1]).reshape(1, -1)
-            progenies[:, marker_mask, 0] = parent_0[
-                arange_prog, arange_markers, crossover_mask[:, :, 0]
-            ]
-
-            parent_1 = parents[:, 1, marker_mask]
-            progenies[:, marker_mask, 1] = parent_1[
-                arange_prog, arange_markers, crossover_mask[:, :, 1]
-            ]
-
-        return progenies
-
-    def _get_crossover_mask(self, n_progenies, chr_idx):
-        r = self.recombination_vectors[chr_idx]
-
-        recombination_sites = np.random.binomial(
-            1, r[None, :, None], size=(n_progenies, r.shape[0], 2)
-        )
-        crossover_mask = np.cumsum(recombination_sites, axis=1) % 2
-        return crossover_mask
 
     def _render_step(self, info):
         def boxplot(axs, values):
@@ -174,6 +120,8 @@ class BreedingGym(gym.Env):
 
     def render(self, file_name=None):
         if self.render_mode is not None:
+            set_up_plt(self.render_kwargs["font"])
+
             xticks = np.arange(self.step_idx + 1)
 
             titles = self.render_kwargs["traits"]
@@ -228,20 +176,14 @@ class BreedingGym(gym.Env):
         the output will be n x t, where t is the number of traits.
         """
         if not self._GEBV_cache:  # WARN: not multithreading safe
-            monoploidy = self.population.mean(axis=-1, dtype=np.float32)
-            GEBV = np.dot(monoploidy, self.marker_effects)
-            self._GEBV = pd.DataFrame(GEBV, columns=self.trait_names)
+            self._GEBV = self.simulator.GEBV(self.population)
             self._GEBV_cache = True
         return self._GEBV
 
     @property
     def corrcoef(self):
         if not self._corrcoef_cache:  # WARN: not multithreading safe
-            monoploid_enc = self.population.sum(axis=-1)
-            mean_pop = np.mean(monoploid_enc, axis=0, dtype=np.float32)
-            pop_with_centroid = np.vstack([mean_pop, monoploid_enc])
-            corrcoef = np.corrcoef(pop_with_centroid, dtype=np.float32)
-            self._corrcoef = corrcoef[0, 1:]
+            self._corrcoef = self.simulator.corrcoef(self.population)
             self._corrcoef_cache = True
         return self._corrcoef
 

@@ -46,4 +46,3 @@ def test_caching():
     corrcoef3 = env.corrcoef
     assert id(corrcoef) != id(corrcoef3)
     assert id(GEBV) != id(GEBV3)
-

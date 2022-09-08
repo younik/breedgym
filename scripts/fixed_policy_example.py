@@ -1,11 +1,10 @@
 import gym
+import breeding_gym  # noqa
 import numpy as np
-from breeding_gym.utils.plot_utils import set_up_plt, NEURIPS_FONT_FAMILY
-
 
 if __name__ == '__main__':
     num_generations = 10
-    bests = [10, 67, 23]
+    bests = [10]
     episode_names = [f"{b} bests" for b in bests]
 
     env = gym.make("SimplifiedBreedingGym",
@@ -13,8 +12,6 @@ if __name__ == '__main__':
                    render_kwargs={"episode_names": episode_names},
                    new_step_api=True
                    )
-
-    set_up_plt(NEURIPS_FONT_FAMILY)
 
     for action in bests:
         pop, info = env.reset(return_info=True)
