@@ -34,7 +34,10 @@ class BreedingGym(gym.Env):
         self.germplasm = np.loadtxt(initial_population, dtype='bool')
         self.germplasm = self.germplasm.reshape(self.germplasm.shape[0], -1, 2)
         self.n_markers = self.germplasm.shape[1]
+
         self.population = None
+        self._GEBV, self._GEBV_cache = None, False
+        self._corrcoef, self._corrcoef_cache = None, False
 
         marker_effects_df = pd.read_table(
             marker_effects, sep="\t", index_col="Name"
@@ -146,6 +149,7 @@ class BreedingGym(gym.Env):
 
     def _get_crossover_mask(self, n_progenies, chr_idx):
         r = self.recombination_vectors[chr_idx]
+
         recombination_sites = np.random.binomial(
             1, r[None, :, None], size=(n_progenies, r.shape[0], 2)
         )
@@ -207,23 +211,39 @@ class BreedingGym(gym.Env):
         return {"GEBV": self.GEBV}
 
     @property
+    def population(self):
+        return self._population
+
+    @population.setter
+    def population(self, new_pop):
+        self._population = new_pop
+        self._GEBV_cache = False
+        self._corrcoef_cache = False
+
+    @property
     def GEBV(self):
         """
         Returns the GEBV for each traits of each individuals.
         If the population is composed by n individual,
         the output will be n x t, where t is the number of traits.
         """
-        monoploidy = self.population.mean(axis=-1, dtype=np.float32)
-        GEBV = np.dot(monoploidy, self.marker_effects)
-        return pd.DataFrame(GEBV, columns=self.trait_names)
+        if not self._GEBV_cache:  # WARN: not multithreading safe
+            monoploidy = self.population.mean(axis=-1, dtype=np.float32)
+            GEBV = np.dot(monoploidy, self.marker_effects)
+            self._GEBV = pd.DataFrame(GEBV, columns=self.trait_names)
+            self._GEBV_cache = True
+        return self._GEBV
 
     @property
     def corrcoef(self):
-        monoploid_enc = self.population.sum(axis=-1)
-        mean_pop = np.mean(monoploid_enc, axis=0, dtype=np.float32)
-        pop_with_centroid = np.vstack([mean_pop, monoploid_enc])
-        corrcoef = np.corrcoef(pop_with_centroid, dtype=np.float32)
-        return corrcoef[0, 1:]
+        if not self._corrcoef_cache:  # WARN: not multithreading safe
+            monoploid_enc = self.population.sum(axis=-1)
+            mean_pop = np.mean(monoploid_enc, axis=0, dtype=np.float32)
+            pop_with_centroid = np.vstack([mean_pop, monoploid_enc])
+            corrcoef = np.corrcoef(pop_with_centroid, dtype=np.float32)
+            self._corrcoef = corrcoef[0, 1:]
+            self._corrcoef_cache = True
+        return self._corrcoef
 
 
 def default_f_index(GEBV):
@@ -256,7 +276,7 @@ class SimplifiedBreedingGym(gym.Wrapper):
             "corrcoef": spaces.Box(-0.5, 0.5, shape=(self.individual_per_gen,))
         })
 
-        # max x | x * (x - 1) / 2 < individual_per_gen
+        # max x, s.t. x * (x - 1) / 2 < individual_per_gen
         max_best = (1 + sqrt(1 + 8 * self.individual_per_gen)) // 2
         self.action_space = spaces.Discrete(int(max_best - 1), start=2)
 
@@ -268,6 +288,7 @@ class SimplifiedBreedingGym(gym.Wrapper):
         options["n_individuals"] = self.individual_per_gen
 
         _, info = self.env.reset(seed, True, options)
+        print(self.env.episode_idx)
 
         if return_info:
             return self._simplified_obs(info), info
