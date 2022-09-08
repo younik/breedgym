@@ -7,28 +7,23 @@ class BreedingSimulator:
 
     def __init__(
         self,
-        chromosomes_map=DATA_PATH.joinpath("map.txt"),
-        marker_effects=DATA_PATH.joinpath("marker_effects.txt"),
+        genetic_map=DATA_PATH.joinpath("genetic_map.txt"),
     ):
-        marker_effects_df = pd.read_table(
-            marker_effects, sep="\t", index_col="Name"
+        genetic_map_df = pd.read_table(
+            genetic_map, sep="\t", index_col="Marker"
         )
-        self.trait_names = list(marker_effects_df.columns)
-        self.marker_effects = marker_effects_df.to_numpy(np.float32)
+        self.trait_names = ["Yield"]
+        self.marker_effects = genetic_map_df["Effect"].to_numpy(np.float32)
 
-        self.chr_map = pd.read_table(chromosomes_map, sep="\t")
-        self.pred = self.chr_map['pred'].to_numpy()
-        self.marker_chr, self.chr_set = self.chr_map['CHR.PHYS'].factorize()
-        chr_phys_group = self.chr_map.groupby('CHR.PHYS')
-        self.chr_sizes = chr_phys_group['pred'].max().to_numpy()
+        self.marker_chr, self.chr_set = genetic_map_df['Chr'].factorize()
 
-        self.recombination_vectors = []
-        for chr_idx in range(len(self.chr_set)):
-            marker_in_chr = np.count_nonzero(self.marker_chr == chr_idx)
-            prob = 1.5 / marker_in_chr
-            r = np.full(marker_in_chr, prob)
-            r[0] = 0.5  # first element should be equally likely
-            self.recombination_vectors.append(r)
+        self.r_vectors = genetic_map_df.groupby("Chr")["RecombRate"].agg(
+            lambda chr_r: chr_r.to_list()
+        ).values
+        for r in self.r_vectors:
+            # change semantic to "recombine now" instead of "recombine after"
+            r[1:] = r[:-1]
+            r[0] = 0.5  # first index equally likely
 
     def cross(self, parents):
         n_progenies = parents.shape[0]
@@ -56,11 +51,9 @@ class BreedingSimulator:
         return progenies
 
     def _get_crossover_mask(self, n_progenies, chr_idx):
-        r = self.recombination_vectors[chr_idx]
-
-        recombination_sites = np.random.binomial(
-            1, r[None, :, None], size=(n_progenies, r.shape[0], 2)
-        )
+        r = self.r_vectors[chr_idx]
+        samples = np.random.rand(n_progenies, r.shape[0], 2)
+        recombination_sites = samples < r[None, :, None]
         crossover_mask = np.cumsum(recombination_sites, axis=1) % 2
         return crossover_mask
 
