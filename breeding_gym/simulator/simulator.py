@@ -54,7 +54,7 @@ class BreedingSimulator:
         r = self.r_vectors[chr_idx]
         samples = np.random.rand(n_progenies, r.shape[0], 2)
         recombination_sites = samples < r[None, :, None]
-        crossover_mask = np.cumsum(recombination_sites, axis=1) % 2
+        crossover_mask = np.logical_xor.accumulate(recombination_sites, axis=1)
         return crossover_mask
 
     def GEBV(self, population):
