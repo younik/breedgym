@@ -1,6 +1,7 @@
 import gym
 import breeding_gym  # noqa
 import numpy as np
+from breeding_gym.utils.paths import DATA_PATH
 
 if __name__ == '__main__':
     num_generations = 10
@@ -8,6 +9,9 @@ if __name__ == '__main__':
     episode_names = [f"{b} bests" for b in bests]
 
     env = gym.make("SimplifiedBreedingGym",
+                   individual_per_gen=370,
+                   initial_population=DATA_PATH.joinpath("smaller_geno.txt"),
+                   genetic_map=DATA_PATH.joinpath("smaller_genetic_map.txt"),
                    render_mode="matplotlib",
                    render_kwargs={"episode_names": episode_names},
                    new_step_api=True

@@ -19,7 +19,7 @@ class BreedingSimulator:
 
         self.r_vectors = genetic_map_df.groupby("Chr")["RecombRate"].agg(
             lambda chr_r: chr_r.to_list()
-        ).values
+        ).apply(np.array).values
         for r in self.r_vectors:
             # change semantic to "recombine now" instead of "recombine after"
             r[1:] = r[:-1]
@@ -39,13 +39,15 @@ class BreedingSimulator:
 
             parent_0 = parents[:, 0, marker_mask]
             arange_markers = np.arange(parent_0.shape[1]).reshape(1, -1)
+            parent_0_mask = crossover_mask[:, :, 0].astype(np.int8)
             progenies[:, marker_mask, 0] = parent_0[
-                arange_prog, arange_markers, crossover_mask[:, :, 0]
+                arange_prog, arange_markers, parent_0_mask
             ]
 
             parent_1 = parents[:, 1, marker_mask]
+            parent_1_mask = crossover_mask[:, :, 1].astype(np.int8)
             progenies[:, marker_mask, 1] = parent_1[
-                arange_prog, arange_markers, crossover_mask[:, :, 1]
+                arange_prog, arange_markers, parent_1_mask
             ]
 
         return progenies
@@ -63,7 +65,7 @@ class BreedingSimulator:
         return pd.DataFrame(GEBV, columns=self.trait_names)
 
     def corrcoef(self, population):
-        monoploid_enc = population.sum(axis=-1)
+        monoploid_enc = population.reshape(population.shape[0], -1)
         mean_pop = np.mean(monoploid_enc, axis=0, dtype=np.float32)
         pop_with_centroid = np.vstack([mean_pop, monoploid_enc])
         corrcoef = np.corrcoef(pop_with_centroid, dtype=np.float32)

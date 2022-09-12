@@ -188,12 +188,16 @@ class BreedingGym(gym.Env):
         return self._corrcoef
 
 
-def default_f_index(GEBV):
+def steven_index(GEBV):
     GEBV_copy = np.copy(GEBV)
     GEBV_copy[:, 2] = np.abs(GEBV_copy[:, 2])
 
     weights = np.array([2, -1, 1, 1, 1])
     return np.dot(GEBV_copy, weights)
+
+
+def yield_index(GEBV):
+    return GEBV["Yield"]
 
 
 class SimplifiedBreedingGym(gym.Wrapper):
@@ -204,7 +208,7 @@ class SimplifiedBreedingGym(gym.Wrapper):
         self,
         env=None,
         individual_per_gen=2250,
-        f_index=default_f_index,
+        f_index=yield_index,
         **kwargs
     ):
         if env is None:
