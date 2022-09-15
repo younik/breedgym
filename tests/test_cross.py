@@ -13,8 +13,8 @@ def test_cross_r(idx):
     BreedingSimulator._get_crossover_mask = const_co_mask
 
     env = BreedingGym(
-        initial_population=DATA_PATH.joinpath("smaller_geno.txt"),
-        genetic_map=DATA_PATH.joinpath("smaller_genetic_map.txt"),
+        initial_population=DATA_PATH.joinpath("small_geno.txt"),
+        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
     )
     init_pop = env.reset()
     p0, p1 = init_pop[0], init_pop[1]
@@ -31,8 +31,8 @@ def test_cross_r(idx):
 
 def test_caching():
     env = BreedingGym(
-        initial_population=DATA_PATH.joinpath("smaller_geno.txt"),
-        genetic_map=DATA_PATH.joinpath("smaller_genetic_map.txt"),
+        initial_population=DATA_PATH.joinpath("small_geno.txt"),
+        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
     )
     env.reset(return_info=False)
 

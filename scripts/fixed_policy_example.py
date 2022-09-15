@@ -11,8 +11,8 @@ if __name__ == '__main__':
 
     env = gym.make("SimplifiedBreedingGym",
                    individual_per_gen=200,
-                   initial_population=DATA_PATH.joinpath("smaller_geno.txt"),
-                   genetic_map=DATA_PATH.joinpath("smaller_genetic_map.txt"),
+                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
+                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
                    render_mode="matplotlib",
                    render_kwargs={"episode_names": ["yield", "OHV"]},
                    #render_kwargs={"episode_names": episode_names},
