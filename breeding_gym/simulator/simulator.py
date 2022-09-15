@@ -14,6 +14,8 @@ class BreedingSimulator:
         )
         self.trait_names = ["Yield"]
         self.marker_effects = genetic_map_df["Effect"].to_numpy(np.float32)
+        positive_mask = self.marker_effects > 0
+        self.max_gebvs = 2 * self.marker_effects[positive_mask].sum(axis=0)
 
         self.marker_chr, self.chr_set = genetic_map_df['Chr'].factorize()
 
@@ -60,7 +62,7 @@ class BreedingSimulator:
         return crossover_mask
 
     def GEBV(self, population):
-        monoploidy = population.mean(axis=-1, dtype=np.float32)
+        monoploidy = population.sum(axis=-1, dtype=np.float32)
         GEBV = np.dot(monoploidy, self.marker_effects)
         return pd.DataFrame(GEBV, columns=self.trait_names)
 

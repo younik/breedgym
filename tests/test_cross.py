@@ -9,7 +9,7 @@ import pytest
 def test_cross_r(idx):
     def const_co_mask(self, n_progenies, chr_idx):
         marker_per_chr = self.r_vectors[chr_idx].shape[0]
-        return idx * np.ones((n_progenies, marker_per_chr, 2), dtype="int")
+        return idx * np.ones((n_progenies, marker_per_chr, 2), dtype="bool")
     BreedingSimulator._get_crossover_mask = const_co_mask
 
     env = BreedingGym(

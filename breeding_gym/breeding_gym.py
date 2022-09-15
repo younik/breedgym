@@ -3,6 +3,7 @@ import gym
 from gym import spaces
 import numpy as np
 from breeding_gym.simulator.simulator import BreedingSimulator
+from breeding_gym.utils.index_functions import yield_index
 from breeding_gym.utils.paths import DATA_PATH
 from breeding_gym.utils.plot_utils import set_up_plt, NEURIPS_FONT_FAMILY
 import matplotlib.pyplot as plt
@@ -46,8 +47,15 @@ class BreedingGym(gym.Env):
             self.render_kwargs = render_kwargs
             self.render_kwargs.setdefault("colors", ["b", "g", "r", "c", "m"])
             self.render_kwargs.setdefault("offset", 0)
-            self.render_kwargs.setdefault("corrcoef", True)
             self.render_kwargs.setdefault("traits", self.simulator.trait_names)
+            self.render_kwargs.setdefault("other_features", [
+                lambda: self.corrcoef,
+                lambda: self.genetic_gain
+            ])
+            self.render_kwargs.setdefault("feature_names", [
+                "corrcoef",
+                "Genetic Gain"
+            ])
             self.render_kwargs.setdefault("episode_names", "Episode {:d}")
             self.render_kwargs.setdefault("font", NEURIPS_FONT_FAMILY)
             self.axs = self._make_axs()
@@ -56,8 +64,8 @@ class BreedingGym(gym.Env):
         if "axs" in self.render_kwargs.keys():
             return self.render_kwargs["axs"]
         else:
-            corrcoef = int(self.render_kwargs["corrcoef"])
-            n_figs = len(self.render_kwargs["traits"]) + corrcoef
+            n_figs = len(self.render_kwargs["traits"]) + \
+                len(self.render_kwargs["other_features"])
             nrows = floor(sqrt(n_figs))
             ncols = ceil(n_figs / nrows)
             axs = plt.subplots(nrows, ncols, figsize=(4*ncols, 4*nrows))[1]
@@ -115,8 +123,9 @@ class BreedingGym(gym.Env):
         for idx, trait in enumerate(self.render_kwargs["traits"]):
             boxplot(self.axs[idx], info["GEBV"][trait])
 
-        if self.render_kwargs["corrcoef"]:
-            boxplot(self.axs[idx+1], self.corrcoef)
+        for feature in self.render_kwargs["other_features"]:
+            idx += 1
+            boxplot(self.axs[idx], feature())
 
     def render(self, file_name=None):
         if self.render_mode is not None:
@@ -124,9 +133,8 @@ class BreedingGym(gym.Env):
 
             xticks = np.arange(self.step_idx + 1)
 
-            titles = self.render_kwargs["traits"]
-            if self.render_kwargs["corrcoef"]:
-                titles = self.render_kwargs["traits"] + ["Corrcoef"]
+            titles = self.render_kwargs["traits"] + \
+                self.render_kwargs["feature_names"]
             for ax, title in zip(self.axs, titles):
                 ax.set_xticks(xticks + self.episode_idx / 12, xticks)
                 ax.set_title(title)
@@ -187,17 +195,9 @@ class BreedingGym(gym.Env):
             self._corrcoef_cache = True
         return self._corrcoef
 
-
-def steven_index(GEBV):
-    GEBV_copy = np.copy(GEBV)
-    GEBV_copy[:, 2] = np.abs(GEBV_copy[:, 2])
-
-    weights = np.array([2, -1, 1, 1, 1])
-    return np.dot(GEBV_copy, weights)
-
-
-def yield_index(GEBV):
-    return GEBV["Yield"]
+    @property
+    def genetic_gain(self):
+        return self.GEBV / self.simulator.max_gebvs * 100
 
 
 class SimplifiedBreedingGym(gym.Wrapper):
@@ -208,7 +208,7 @@ class SimplifiedBreedingGym(gym.Wrapper):
         self,
         env=None,
         individual_per_gen=2250,
-        f_index=yield_index,
+        # f_index=yield_index,
         **kwargs
     ):
         if env is None:
@@ -226,15 +226,15 @@ class SimplifiedBreedingGym(gym.Wrapper):
         max_best = (1 + sqrt(1 + 8 * self.individual_per_gen)) // 2
         self.action_space = spaces.Discrete(int(max_best - 1), start=2)
 
-        self.f_index = f_index
+        # self.f_index = f_index
 
     def reset(self, seed=None, return_info=False, options=None):
         if options is None:
             options = {}
         options["n_individuals"] = self.individual_per_gen
 
+        self.f_index = options["index"]
         _, info = self.env.reset(seed, True, options)
-        print(self.env.episode_idx)
 
         if return_info:
             return self._simplified_obs(info), info
@@ -245,7 +245,7 @@ class SimplifiedBreedingGym(gym.Wrapper):
         children = action * (action - 1) / 2
         n_offspring = ceil(self.individual_per_gen / children)
 
-        indices = self.f_index(self.GEBV)
+        indices = self.f_index(self)
 
         # retrieve the `action` best population indices
         best_pop = np.argpartition(indices, -action)[-action:]
