@@ -8,6 +8,6 @@ register(
 
 register(
     id='SimplifiedBreedingGym',
-    entry_point='breeding_gym.breeding_gym:SimplifiedBreedingGym',
+    entry_point='breeding_gym.wrappers:SimplifiedBreedingGym',
     max_episode_steps=10,
 )

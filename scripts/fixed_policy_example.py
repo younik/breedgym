@@ -6,16 +6,17 @@ from breeding_gym.utils.paths import DATA_PATH
 
 if __name__ == '__main__':
     num_generations = 10
-    bests = [10]
+    bests = [
+        {"n_bests": 20, "n_crosses": 10},
+    ]
     episode_names = [f"{b} bests" for b in bests]
 
     env = gym.make("SimplifiedBreedingGym",
                    individual_per_gen=200,
-                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
-                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+                   initial_population=DATA_PATH.joinpath("medium_geno.txt"),
+                   genetic_map=DATA_PATH.joinpath("medium_genetic_map.txt"),
                    render_mode="matplotlib",
                    render_kwargs={"episode_names": ["yield", "OHV"]},
-                   #render_kwargs={"episode_names": episode_names},
                    new_step_api=True
                    )
 
