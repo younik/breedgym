@@ -1,4 +1,4 @@
-from breeding_gym.breeding_gym import BreedingGym
+import gym
 import numpy as np
 from breeding_gym.simulator.simulator import BreedingSimulator
 from breeding_gym.utils.paths import DATA_PATH
@@ -12,15 +12,15 @@ def test_cross_r(idx):
         return idx * np.ones((n_progenies, marker_per_chr, 2), dtype="bool")
     BreedingSimulator._get_crossover_mask = const_co_mask
 
-    env = BreedingGym(
-        initial_population=DATA_PATH.joinpath("small_geno.txt"),
-        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
-    )
+    env = gym.make("BreedingGym",
+                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
+                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+                   )
     init_pop = env.reset()
     p0, p1 = init_pop[0], init_pop[1]
     assert p0.shape == p1.shape
 
-    new_pop, _, _, _, _ = env.step(np.array([[0, 1]]))
+    new_pop, _, _, _ = env.step(np.array([[0, 1]]))
 
     assert new_pop.shape == (1, p0.shape[0], 2)
 
@@ -30,10 +30,10 @@ def test_cross_r(idx):
 
 
 def test_caching():
-    env = BreedingGym(
-        initial_population=DATA_PATH.joinpath("small_geno.txt"),
-        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
-    )
+    env = gym.make("BreedingGym",
+                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
+                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+                   )
     env.reset(return_info=False)
 
     GEBV = env.GEBV
@@ -55,3 +55,17 @@ def test_caching():
     corrcoef3 = env.corrcoef
     assert id(corrcoef) != id(corrcoef3)
     assert id(GEBV) != id(GEBV3)
+
+
+def test_reset_population():
+    env = gym.make("BreedingGym",
+                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
+                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+                   )
+
+    pop = env.reset(return_info=False)
+    init_pop = np.copy(pop)
+
+    env.step(np.asarray(env.action_space.sample()) % len(pop))
+    pop = env.reset(return_info=False)
+    assert np.all(init_pop == pop)
