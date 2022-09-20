@@ -21,8 +21,12 @@ class BreedingGym(gym.Env):
         render_kwargs={},
         **kwargs
     ):
+        self.simulator = BreedingSimulator(**kwargs)
+        self.germplasm = np.loadtxt(initial_population, dtype='bool')
+        self.germplasm = self.germplasm.reshape(self.germplasm.shape[0], -1, 2)
+
         self.observation_space = spaces.Sequence(
-            spaces.Box(0, 1, shape=(19864,))
+            spaces.Box(0, 1, shape=(self.germplasm.shape[1], 2))
         )
         self.action_space = spaces.Sequence(
             spaces.Tuple((
@@ -30,10 +34,6 @@ class BreedingGym(gym.Env):
                 spaces.Discrete(self.MAX_INDIVIDUALS)
             ))
         )
-
-        self.simulator = BreedingSimulator(**kwargs)
-        self.germplasm = np.loadtxt(initial_population, dtype='bool')
-        self.germplasm = self.germplasm.reshape(self.germplasm.shape[0], -1, 2)
 
         self.population = None
         self._GEBV, self._GEBV_cache = None, False
