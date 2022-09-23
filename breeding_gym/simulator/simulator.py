@@ -17,47 +17,46 @@ class BreedingSimulator:
         positive_mask = self.marker_effects > 0
         self.max_gebvs = 2 * self.marker_effects[positive_mask].sum(axis=0)
 
-        self.marker_chr, self.chr_set = genetic_map_df['Chr'].factorize()
+        chr_map = genetic_map_df['Chr']
+        self.marker_chr, self.chr_set = chr_map.factorize()
 
-        self.r_vectors = genetic_map_df.groupby("Chr")["RecombRate"].agg(
-            lambda chr_r: chr_r.to_list()
-        ).apply(np.array).values
-        for r in self.r_vectors:
-            # change semantic to "recombine now" instead of "recombine after"
-            r[1:] = r[:-1]
-            r[0] = 0.5  # first index equally likely
+        self.recombination_vec = genetic_map_df["RecombRate"].to_numpy()
+        
+        # change semantic to "recombine now" instead of "recombine after"
+        self.recombination_vec[1:] = self.recombination_vec[:-1]
+
+        first_mrk_map = np.zeros(len(chr_map), dtype='bool')
+        first_mrk_map[1:] = chr_map[1:].values != chr_map[:-1].values
+        first_mrk_map[0] = True
+        self.recombination_vec[first_mrk_map] = 0.5  # first equally likely
 
     def cross(self, parents):
         n_progenies = parents.shape[0]
-        arange_prog = np.arange(n_progenies).reshape(-1, 1)
+        arange_prog = np.arange(n_progenies)[:, None]
 
         progenies = np.empty(
             shape=(n_progenies, len(self.marker_effects), 2),
             dtype='bool'
         )
-        for chr_idx in range(len(self.chr_set)):
-            crossover_mask = self._get_crossover_mask(n_progenies, chr_idx)
-            marker_mask = self.marker_chr == chr_idx
 
-            parent_0 = parents[:, 0, marker_mask]
-            arange_markers = np.arange(parent_0.shape[1]).reshape(1, -1)
-            parent_0_mask = crossover_mask[:, :, 0].astype(np.int8)
-            progenies[:, marker_mask, 0] = parent_0[
-                arange_prog, arange_markers, parent_0_mask
-            ]
+        crossover_mask = self._get_crossover_mask(n_progenies)
 
-            parent_1 = parents[:, 1, marker_mask]
-            parent_1_mask = crossover_mask[:, :, 1].astype(np.int8)
-            progenies[:, marker_mask, 1] = parent_1[
-                arange_prog, arange_markers, parent_1_mask
-            ]
+        arange_markers = np.arange(len(self.marker_effects))[None, :]
+        parent_0_mask = crossover_mask[:, :, 0].astype(np.int8)
+        progenies[:, :, 0] = parents[:, 0][
+            arange_prog, arange_markers, parent_0_mask
+        ]
+
+        parent_1_mask = crossover_mask[:, :, 1].astype(np.int8)
+        progenies[:, :, 1] = parents[:, 1][
+            arange_prog, arange_markers, parent_1_mask
+        ]
 
         return progenies
 
-    def _get_crossover_mask(self, n_progenies, chr_idx):
-        r = self.r_vectors[chr_idx]
-        samples = np.random.rand(n_progenies, r.shape[0], 2)
-        recombination_sites = samples < r[None, :, None]
+    def _get_crossover_mask(self, n_progenies):
+        samples = np.random.rand(n_progenies, len(self.marker_effects), 2)
+        recombination_sites = samples < self.recombination_vec[None, :, None]
         crossover_mask = np.logical_xor.accumulate(recombination_sites, axis=1)
         return crossover_mask
 

@@ -1,32 +1,35 @@
 import gym
 import numpy as np
-from breeding_gym.simulator.simulator import BreedingSimulator
 from breeding_gym.utils.paths import DATA_PATH
 import pytest
 
 
-@pytest.mark.parametrize("idx", [0, 1])
-def test_cross_r(idx):
-    def const_co_mask(self, n_progenies, chr_idx):
-        marker_per_chr = self.r_vectors[chr_idx].shape[0]
-        return idx * np.ones((n_progenies, marker_per_chr, 2), dtype="bool")
-    BreedingSimulator._get_crossover_mask = const_co_mask
-
+def test_reset_population():
     env = gym.make("BreedingGym",
                    initial_population=DATA_PATH.joinpath("small_geno.txt"),
                    genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
                    )
-    init_pop = env.reset()
-    p0, p1 = init_pop[0], init_pop[1]
-    assert p0.shape == p1.shape
 
-    new_pop, _, _, _ = env.step(np.array([[0, 1]]))
+    pop = env.reset(return_info=False)
+    init_pop = np.copy(pop)
 
-    assert new_pop.shape == (1, p0.shape[0], 2)
+    env.step(np.asarray(env.action_space.sample()) % len(pop))
+    pop = env.reset(return_info=False)
+    assert np.all(init_pop == pop)
 
-    ind = new_pop[0]
-    assert np.all(ind[:, 0] == p0[:, idx])
-    assert np.all(ind[:, 1] == p1[:, idx])
+
+@pytest.mark.parametrize("n", [1, 5, 10])
+def test_num_progenies(n):
+    env = gym.make("BreedingGym",
+                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
+                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+                   )
+    pop = env.reset(return_info=False)
+
+    action = np.random.randint(len(pop), size=(n, 2))
+    env.step(action)
+
+    assert len(env.population) == n
 
 
 def test_caching():
@@ -55,17 +58,3 @@ def test_caching():
     corrcoef3 = env.corrcoef
     assert id(corrcoef) != id(corrcoef3)
     assert id(GEBV) != id(GEBV3)
-
-
-def test_reset_population():
-    env = gym.make("BreedingGym",
-                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
-                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
-                   )
-
-    pop = env.reset(return_info=False)
-    init_pop = np.copy(pop)
-
-    env.step(np.asarray(env.action_space.sample()) % len(pop))
-    pop = env.reset(return_info=False)
-    assert np.all(init_pop == pop)
