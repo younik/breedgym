@@ -1,5 +1,4 @@
 import numpy as np
-import pulp
 
 
 def yield_index(env):
@@ -7,49 +6,50 @@ def yield_index(env):
 
 
 def optimal_haploid_pop(env):
-    optimal_haploid_pop = np.empty_like(env.population)
+    optimal_haploid_pop = np.empty(
+        (env.population.shape[0], env.population.shape[1]), dtype='bool'
+    )
     positive_mask = env.simulator.marker_effects > 0
 
-    optimal_haploid_pop[:, positive_mask] = np.max(
-        env.population[:, positive_mask], axis=-1
-    )[:, :, None]
-    optimal_haploid_pop[:, ~positive_mask] = np.min(
-        env.population[:, ~positive_mask], axis=-1
-    )[:, :, None]
+    optimal_haploid_pop[:, positive_mask] = np.logical_or(
+        env.population[:, positive_mask, 0],
+        env.population[:, positive_mask, 1]
+    )
+    optimal_haploid_pop[:, ~positive_mask] = np.logical_and(
+        env.population[:, ~positive_mask, 0],
+        env.population[:, ~positive_mask, 1]
+    )
 
     return optimal_haploid_pop
 
 
 def optimal_haploid_value(env):
     oh_pop = optimal_haploid_pop(env)
-    return env.simulator.GEBV(oh_pop)["Yield"]
+    return 2 * env.simulator.GEBV(oh_pop[:, :, None])["Yield"]
 
 
-def optimal_population_value(env):
-    def my_dot(a, b):
-        assert len(a) == len(b)
-        return pulp.lpSum([a[i] * b[i] for i in range(len(a))])
+def optimal_population_value(n):
 
-    problem = pulp.LpProblem("Optimal Population Value", pulp.LpMaximize)
-    binary = {"lowBound": 0, "upBound": 1, "cat": pulp.LpInteger}
+    def optimal_population_value_f(env):
+        output = np.zeros(len(env.population), dtype='bool')
+        positive_mask = env.simulator.marker_effects > 0
+        current_set = ~positive_mask
+        G = optimal_haploid_pop(env)
 
-    c = env.simulator.marker_effects
-    n_markers = len(c)
-    best_set = pulp.LpVariable.dicts("best_set", range(n_markers), **binary)
-    problem += pulp.lpDot(c, best_set)
+        for _ in range(n):
+            G[:, positive_mask] = np.logical_or(
+                G[:, positive_mask], current_set[positive_mask]
+            )
+            G[:, ~positive_mask] = np.logical_and(
+                G[:, ~positive_mask], current_set[~positive_mask]
+            )
 
-    x = pulp.LpVariable.dicts("x", range(len(env.population)), **binary)
-    problem += pulp.lpSum(x) == 20
+            best_idx = np.argmax(env.simulator.GEBV(G[:, :, None])["Yield"])
+            output[best_idx] = True
+            current_set = G[best_idx]
+            G[best_idx] = ~positive_mask  # "remove" it
 
-    G = optimal_haploid_pop(env)
+        assert np.count_nonzero(output) == n
+        return output  # not OPV but a mask
 
-    for marker_idx in range(n_markers):
-        # y <= G \cdot x
-        problem += best_set[marker_idx] <= my_dot(G[:, marker_idx], x)
-
-        # y >= 1 - (1 - G) \cdot x
-        not_G = 1 - G[:, marker_idx]
-        problem += best_set[marker_idx] >= 1 - my_dot(not_G, x)
-
-    res = problem.solve()
-    return res.x  # it doesn't return the OPV per ind but the selection mask
+    return optimal_population_value_f
