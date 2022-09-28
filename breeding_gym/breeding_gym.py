@@ -128,7 +128,7 @@ class BreedingGym(gym.Env):
 
     def render(self, file_name=None):
         if self.render_mode is not None:
-            set_up_plt(self.render_kwargs["font"])
+            set_up_plt(self.render_kwargs["font"], use_tex=False)
 
             xticks = np.arange(self.step_idx + 1)
 

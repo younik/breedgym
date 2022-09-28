@@ -5,9 +5,9 @@ NEURIPS_TEXT_WIDTH = 397.48499
 NEURIPS_FONT_FAMILY = "Times New Roman"
 
 
-def set_up_plt(font_family):
+def set_up_plt(font_family, use_tex=True):
 
-    plt.rcParams['text.usetex'] = True
+    plt.rcParams['text.usetex'] = use_tex
 
     SMALL_SIZE = 10
     MEDIUM_SIZE = 12

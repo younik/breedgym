@@ -21,7 +21,7 @@ if __name__ == '__main__':
     names = ["standard", "OHV", "OPV"]
     colors = ["b", "g", "r"]
 
-    set_up_plt(NEURIPS_FONT_FAMILY)
+    set_up_plt(NEURIPS_FONT_FAMILY, use_tex=False)
     fig, axs = plt.subplots(1, 2, figsize=(8, 4))
 
     env = gym.make("SimplifiedBreedingGym",
@@ -38,7 +38,7 @@ if __name__ == '__main__':
         for trial_idx in range(trials):
             pop, info = env.reset(return_info=True, options={"index": index})
 
-            print("Trial:", trial_idx)
+            print("Trial:", trial_idx, flush=True)
             for i in range(num_generations):
                 action = {"n_bests": n_bests, "n_crosses": n_crosses}
                 pop, r, terminated, truncated, info = env.step(action)
@@ -63,4 +63,5 @@ if __name__ == '__main__':
 
 
 plt.figlegend(loc='upper right')
-plt.show()
+plt.savefig("out.png")
+#plt.show()

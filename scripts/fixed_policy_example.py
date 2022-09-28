@@ -16,7 +16,9 @@ if __name__ == '__main__':
                    initial_population=DATA_PATH.joinpath("medium_geno.txt"),
                    genetic_map=DATA_PATH.joinpath("medium_genetic_map.txt"),
                    render_mode="matplotlib",
-                   render_kwargs={"episode_names": ["yield", "OHV"]},
+                   render_kwargs={
+                       "episode_names": ["yield", "OHV"],
+                    },
                    new_step_api=True
                    )
 
@@ -27,15 +29,15 @@ if __name__ == '__main__':
             pop, r, terminated, truncated, info = env.step(action)
 
             mean_GEBV = np.mean(info["GEBV"], axis=0)
-            print("------- GEBV -------")
-            print(mean_GEBV)
+            print("------- GEBV -------", flush=True)
+            print(mean_GEBV, flush=True)
 
         pop, info = env.reset(return_info=True, options={"index": optimal_haploid_value})
         for i in np.arange(num_generations):
             pop, r, terminated, truncated, info = env.step(action)
 
             mean_GEBV = np.mean(info["GEBV"], axis=0)
-            print("------- GEBV -------")
-            print(mean_GEBV)
+            print("------- GEBV -------", flush=True)
+            print(mean_GEBV, flush=True)
 
-    env.render()
+    env.render(file_name="out.png")
