@@ -4,7 +4,7 @@ import numpy as np
 from breeding_gym.utils.paths import DATA_PATH
 
 
-n_progenies = 400
+n_progenies = 300
 n_markers = 150_000
 
 parents = np.random.choice(a=[False, True], size=(n_progenies, 2, n_markers, 2), p=[0.5, 0.5])
