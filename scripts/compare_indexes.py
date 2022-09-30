@@ -9,6 +9,7 @@ from breeding_gym.utils.plot_utils import NEURIPS_FONT_FAMILY, set_up_plt
 
 if __name__ == '__main__':
     num_generations = 10
+    individual_per_gen = 200
     n_bests = 20
     n_crosses = 10
 
@@ -25,7 +26,7 @@ if __name__ == '__main__':
     fig, axs = plt.subplots(1, 2, figsize=(8, 4))
 
     env = gym.make("SimplifiedBreedingGym",
-                   individual_per_gen=200,
+                   individual_per_gen=individual_per_gen,
                    initial_population=DATA_PATH.joinpath("medium_geno.txt"),
                    genetic_map=DATA_PATH.joinpath("medium_genetic_map.txt"),
                    new_step_api=True
@@ -42,10 +43,10 @@ if __name__ == '__main__':
             for i in range(num_generations):
                 action = {"n_bests": n_bests, "n_crosses": n_crosses}
                 pop, r, terminated, truncated, info = env.step(action)
-                buffer_gg[trial_idx, i] = env.genetic_gain.mean()
+                buffer_gg[trial_idx, i] = env.GEBV.mean()
                 buffer_corr[trial_idx, i] = np.mean(env.corrcoef)
 
-        gg = np.mean(buffer_gg, axis=0)
+        gg = np.mean(buffer_gg, axis=0) / env.simulator.max_gebv * 100
         corr = np.mean(buffer_corr, axis=0)
         xticks = np.arange(num_generations)
 

@@ -2,31 +2,18 @@ import numpy as np
 import jax.numpy as jnp
 from jax import jit
 import pandas as pd
+from breeding_gym.simulator.gebv_model import GEBVModel
 from breeding_gym.utils.paths import DATA_PATH
 
-
 @jit
-def _cross(parents, marker_effects, crossover_mask):
-    n_progenies = parents.shape[0]
-    arange_prog = jnp.arange(n_progenies)[:, None]
-
-    progenies = jnp.empty(
-        shape=(n_progenies, len(marker_effects), 2),
-        dtype='bool'
+def _cross(parents, crossover_mask):
+    crossover_mask = crossover_mask.astype(jnp.int8) 
+    progenies = jnp.take_along_axis(
+        parents,
+        crossover_mask[:, :, :, None],
+        axis=-1
     )
-
-    arange_markers = jnp.arange(len(marker_effects))[None, :]
-    parent_0_mask = crossover_mask[:, :, 0].astype(jnp.int8)
-    progenies.at[:, :, 0].set(parents[:, 0][
-        arange_prog, arange_markers, parent_0_mask
-    ])
-
-    parent_1_mask = crossover_mask[:, :, 1].astype(jnp.int8)
-    progenies.at[:, :, 1].set(parents[:, 1][
-        arange_prog, arange_markers, parent_1_mask
-    ])
-
-    return progenies
+    return progenies.squeeze(-1).transpose(0, 2, 1)
 
 
 class BreedingSimulator:
@@ -38,11 +25,14 @@ class BreedingSimulator:
         genetic_map_df = pd.read_table(
             genetic_map, sep="\t", index_col="Marker"
         )
-        self.trait_names = ["Yield"]
-        self.marker_effects = genetic_map_df["Effect"].to_numpy(jnp.float32)
-        positive_mask = self.marker_effects > 0
-        self.max_gebvs = 2 * self.marker_effects[positive_mask].sum(axis=0)
+        
+        mrk_effects = genetic_map_df["Effect"]
+        self.gebv_model = GEBVModel(
+            marker_effects=mrk_effects.to_numpy(jnp.float32)[:, None],
+            trait_names=["Yield"]
+        )
 
+        self.n_markers = len(genetic_map_df)
         chr_map = genetic_map_df['Chr']
         self.marker_chr, self.chr_set = chr_map.factorize()
 
@@ -51,27 +41,24 @@ class BreedingSimulator:
         # change semantic to "recombine now" instead of "recombine after"
         self.recombination_vec[1:] = self.recombination_vec[:-1]
 
-        first_mrk_map = jnp.zeros(len(chr_map), dtype='bool')
-        first_mrk_map.at[1:].set(chr_map[1:].values != chr_map[:-1].values)
-        first_mrk_map.at[0].set(True)
+        first_mrk_map = np.zeros(len(chr_map), dtype='bool')
+        first_mrk_map[1:] = chr_map[1:].values != chr_map[:-1].values
+        first_mrk_map[0] = True
         self.recombination_vec[first_mrk_map] = 0.5  # first equally likely
 
 
     def cross(self, parents):
         crossover_mask = self._get_crossover_mask(parents.shape[0])
-        return _cross(parents, self.marker_effects, crossover_mask)
+        return _cross(parents, crossover_mask)
 
     def _get_crossover_mask(self, n_progenies):
-        samples = np.random.rand(n_progenies, len(self.marker_effects), 2)
-        recombination_sites = samples < self.recombination_vec[None, :, None]
-        crossover_mask = np.logical_xor.accumulate(recombination_sites, axis=1)
+        samples = np.random.rand(n_progenies, 2, self.n_markers)
+        recombination_sites = samples < self.recombination_vec[None, None, :]
+        crossover_mask = np.logical_xor.accumulate(recombination_sites, axis=2)
         return crossover_mask
 
-
     def GEBV(self, population):
-        monoploidy = population.sum(axis=-1)
-        GEBV = jnp.dot(monoploidy, self.marker_effects)
-        return pd.DataFrame(GEBV, columns=self.trait_names)
+        return self.gebv_model(population)
 
     def corrcoef(self, population):
         monoploid_enc = population.reshape(population.shape[0], -1)
@@ -79,3 +66,11 @@ class BreedingSimulator:
         pop_with_centroid = jnp.vstack([mean_pop, monoploid_enc])
         corrcoef = jnp.corrcoef(pop_with_centroid)
         return corrcoef[0, 1:]
+    
+    @property
+    def max_gebv(self):
+        return self.gebv_model.max
+    
+    @property
+    def min_gebv(self):
+        return self.gebv_model.min

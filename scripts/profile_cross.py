@@ -1,5 +1,5 @@
 import cProfile
-from breeding_gym.simulator.simulator import BreedingSimulator
+from breeding_gym.simulator import BreedingSimulator
 import numpy as np
 from breeding_gym.utils.paths import DATA_PATH
 
@@ -16,4 +16,3 @@ with cProfile.Profile() as pr:
     simulator.cross(parents)
 
 pr.dump_stats('profile.prof')
-

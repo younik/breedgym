@@ -2,7 +2,7 @@ from math import sqrt, ceil, floor
 import gym
 from gym import spaces
 import numpy as np
-from breeding_gym.simulator.simulator import BreedingSimulator
+from breeding_gym.simulator import BreedingSimulator
 from breeding_gym.utils.paths import DATA_PATH
 from breeding_gym.utils.plot_utils import set_up_plt, NEURIPS_FONT_FAMILY
 import matplotlib.pyplot as plt
@@ -193,7 +193,3 @@ class BreedingGym(gym.Env):
             self._corrcoef = self.simulator.corrcoef(self.population)
             self._corrcoef_cache = True
         return self._corrcoef
-
-    @property
-    def genetic_gain(self):
-        return self.GEBV / self.simulator.max_gebvs * 100
