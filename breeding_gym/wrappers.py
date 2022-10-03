@@ -74,9 +74,9 @@ class SimplifiedBreedingGym(gym.Wrapper):
 
         _, _, terminated, truncated, info = self.env.step(low_level_action)
         obs = self._simplified_obs(info)
-        return obs, np.mean(obs["GEBV"]), terminated, truncated, info
+        return obs, np.mean(obs["GEBV"]), terminated, info#, truncated, info
 
     def _simplified_obs(self, info):
         corrcoef = self.env.corrcoef - 0.5
-        clipped_GEBV = np.clip(info["GEBV"]["Yield"], 0, 30) - 15
+        clipped_GEBV = info["GEBV"]["Yield"] - self.simulator.mean_gebv
         return {"GEBV": clipped_GEBV.to_numpy(), "corrcoef": corrcoef}

@@ -1,3 +1,4 @@
+from pathlib import Path
 import numpy as np
 import jax.numpy as jnp
 from jax import jit
@@ -20,8 +21,15 @@ class BreedingSimulator:
 
     def __init__(
         self,
-        genetic_map=DATA_PATH.joinpath("genetic_map.txt"),
+        genetic_map: Path = DATA_PATH.joinpath("genetic_map.txt"),
+        trait_names: list[str] = ["Yield"],
+        h2: list[int] | None = None
     ):
+        if h2 is None:
+            h2 = len(trait_names) * [1]
+        assert len(h2) == len(trait_names)
+        self.h2 = np.array(h2)
+        
         genetic_map_df = pd.read_table(
             genetic_map, sep="\t", index_col="Marker"
         )
@@ -29,7 +37,7 @@ class BreedingSimulator:
         mrk_effects = genetic_map_df["Effect"]
         self.gebv_model = GEBVModel(
             marker_effects=mrk_effects.to_numpy(jnp.float32)[:, None],
-            trait_names=["Yield"]
+            trait_names=trait_names
         )
 
         self.n_markers = len(genetic_map_df)
@@ -47,7 +55,7 @@ class BreedingSimulator:
         self.recombination_vec[first_mrk_map] = 0.5  # first equally likely
 
 
-    def cross(self, parents):
+    def cross(self, parents: np.ndarray):
         crossover_mask = self._get_crossover_mask(parents.shape[0])
         return _cross(parents, crossover_mask)
 
@@ -57,10 +65,14 @@ class BreedingSimulator:
         crossover_mask = np.logical_xor.accumulate(recombination_sites, axis=2)
         return crossover_mask
 
-    def GEBV(self, population):
+    def GEBV(self, population: np.ndarray):
         return self.gebv_model(population)
+    
+    def phenotype(self, population: np.ndarray):
+        env_effect = (1 - self.h2) * self.var_gebv * np.random.randn(len(self.h2))
+        return self.h2 * self.GEBV(population) + env_effect
 
-    def corrcoef(self, population):
+    def corrcoef(self, population: np.ndarray):
         monoploid_enc = population.reshape(population.shape[0], -1)
         mean_pop = jnp.mean(monoploid_enc, axis=0)
         pop_with_centroid = jnp.vstack([mean_pop, monoploid_enc])
@@ -74,3 +86,11 @@ class BreedingSimulator:
     @property
     def min_gebv(self):
         return self.gebv_model.min
+    
+    @property
+    def mean_gebv(self):
+        return self.gebv_model.mean
+    
+    @property
+    def var_gebv(self):
+        return self.gebv_model.mean
