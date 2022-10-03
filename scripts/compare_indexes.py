@@ -1,10 +1,13 @@
 import gym
 import breeding_gym  # noqa
 import numpy as np
-from breeding_gym.utils.index_functions import optimal_haploid_value, optimal_population_value, yield_index
+from breeding_gym.utils.index_functions import (
+    optimal_haploid_value,
+    optimal_population_value,
+    yield_index
+)
 from breeding_gym.utils.paths import DATA_PATH
 import matplotlib.pyplot as plt
-
 from breeding_gym.utils.plot_utils import NEURIPS_FONT_FAMILY, set_up_plt
 
 if __name__ == '__main__':
@@ -65,4 +68,4 @@ if __name__ == '__main__':
 
 plt.figlegend(loc='upper right')
 plt.savefig("out.png")
-#plt.show()
+# plt.show()

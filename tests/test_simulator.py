@@ -2,34 +2,30 @@ from breeding_gym.simulator import BreedingSimulator
 import pytest
 import numpy as np
 from breeding_gym.utils.paths import DATA_PATH
-import gym
 
 
 @pytest.mark.parametrize("idx", [0, 1])
-def test_cross_r(idx):    
-    env = gym.make("BreedingGym",
-                initial_population=DATA_PATH.joinpath("small_geno.txt"),
-                genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
-                )
-    
+def test_cross_r(idx):
+    simulator = BreedingSimulator(
+        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+    )
+
     def const_co_mask(n_progenies):
-        shape = (n_progenies, 2, env.simulator.n_markers)
+        shape = (n_progenies, 2, simulator.n_markers)
         return idx * np.ones(shape, dtype="bool")
-    
-    env.simulator._get_crossover_mask = const_co_mask
-    init_pop = env.reset()
-    p0, p1 = init_pop[0], init_pop[1]
-    assert p0.shape == p1.shape
 
-    action = np.array([[0, 1]])
-    new_pop, _, _, _ = env.step(action)
+    simulator._get_crossover_mask = const_co_mask
+    size = (1, 2, simulator.n_markers, 2)
+    parents = np.random.choice(a=[False, True], size=size, p=[0.5, 0.5])
 
-    assert new_pop.shape == (1, p0.shape[0], 2)
+    new_pop = simulator.cross(parents)
+
+    assert new_pop.shape == (1, simulator.n_markers, 2)
 
     ind = new_pop[0]
-    assert np.all(ind[:, 0] == p0[:, idx])
-    assert np.all(ind[:, 1] == p1[:, idx])
-        
+    assert np.all(ind[:, 0] == parents[0, 0, :, idx])
+    assert np.all(ind[:, 1] == parents[0, 1, :, idx])
+
 
 def test_equal_parents():
     simulator = BreedingSimulator(
@@ -44,3 +40,18 @@ def test_equal_parents():
     child = simulator.cross(parents)
     print(child)
     assert np.all(child == 1)
+
+
+def test_phenotyping():
+    simulator = BreedingSimulator(
+        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+        h2=[0.5]
+    )
+
+    size = (10, simulator.n_markers, 2)
+    pop = np.random.choice(a=[False, True], size=size, p=[0.5, 0.5])
+
+    assert np.any(simulator.phenotype(pop) != simulator.GEBV(pop))
+
+    simulator.h2 = np.array([1])
+    assert np.all(simulator.phenotype(pop) == simulator.GEBV(pop))
