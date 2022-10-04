@@ -49,11 +49,9 @@ class BreedingGym(gym.Env):
             self.render_kwargs.setdefault("traits", self.simulator.trait_names)
             self.render_kwargs.setdefault("other_features", [
                 lambda: self.corrcoef,
-                lambda: self.genetic_gain
             ])
             self.render_kwargs.setdefault("feature_names", [
                 "corrcoef",
-                "Genetic Gain"
             ])
             self.render_kwargs.setdefault("episode_names", "Episode {:d}")
             self.render_kwargs.setdefault("font", NEURIPS_FONT_FAMILY)

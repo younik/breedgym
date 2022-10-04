@@ -6,9 +6,10 @@ import pandas as pd
 from breeding_gym.simulator.gebv_model import GEBVModel
 from breeding_gym.utils.paths import DATA_PATH
 
+
 @jit
 def _cross(parents, crossover_mask):
-    crossover_mask = crossover_mask.astype(jnp.int8) 
+    crossover_mask = crossover_mask.astype(jnp.int8)
     progenies = jnp.take_along_axis(
         parents,
         crossover_mask[:, :, :, None],
@@ -29,15 +30,15 @@ class BreedingSimulator:
             h2 = len(trait_names) * [1]
         assert len(h2) == len(trait_names)
         self.h2 = np.array(h2)
-        
+        self.trait_names = trait_names
+
         genetic_map_df = pd.read_table(
             genetic_map, sep="\t", index_col="Marker"
         )
-        
+
         mrk_effects = genetic_map_df["Effect"]
         self.gebv_model = GEBVModel(
-            marker_effects=mrk_effects.to_numpy(jnp.float32)[:, None],
-            trait_names=trait_names
+            marker_effects=mrk_effects.to_numpy(jnp.float32)[:, None]
         )
 
         self.n_markers = len(genetic_map_df)
@@ -45,7 +46,7 @@ class BreedingSimulator:
         self.marker_chr, self.chr_set = chr_map.factorize()
 
         self.recombination_vec = genetic_map_df["RecombRate"].to_numpy()
-        
+
         # change semantic to "recombine now" instead of "recombine after"
         self.recombination_vec[1:] = self.recombination_vec[:-1]
 
@@ -53,7 +54,6 @@ class BreedingSimulator:
         first_mrk_map[1:] = chr_map[1:].values != chr_map[:-1].values
         first_mrk_map[0] = True
         self.recombination_vec[first_mrk_map] = 0.5  # first equally likely
-
 
     def cross(self, parents: np.ndarray):
         crossover_mask = self._get_crossover_mask(parents.shape[0])
@@ -65,11 +65,13 @@ class BreedingSimulator:
         crossover_mask = np.logical_xor.accumulate(recombination_sites, axis=2)
         return crossover_mask
 
-    def GEBV(self, population: np.ndarray):
-        return self.gebv_model(population)
-    
+    def GEBV(self, population: np.ndarray) -> pd.DataFrame:
+        GEBV = self.gebv_model(population)
+        return pd.DataFrame(GEBV, columns=self.trait_names)
+
     def phenotype(self, population: np.ndarray):
-        env_effect = (1 - self.h2) * self.var_gebv * np.random.randn(len(self.h2))
+        env_effect = (1 - self.h2) * self.var_gebv * \
+            np.random.randn(len(self.h2))
         return self.h2 * self.GEBV(population) + env_effect
 
     def corrcoef(self, population: np.ndarray):
@@ -78,19 +80,19 @@ class BreedingSimulator:
         pop_with_centroid = jnp.vstack([mean_pop, monoploid_enc])
         corrcoef = jnp.corrcoef(pop_with_centroid)
         return corrcoef[0, 1:]
-    
+
     @property
     def max_gebv(self):
         return self.gebv_model.max
-    
+
     @property
     def min_gebv(self):
         return self.gebv_model.min
-    
+
     @property
     def mean_gebv(self):
         return self.gebv_model.mean
-    
+
     @property
     def var_gebv(self):
         return self.gebv_model.mean
