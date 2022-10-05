@@ -4,7 +4,7 @@ install_requires = [
     'numpy',
     'pandas',
     'matplotlib',
-    'gym==0.25.2',
+    'gym>=0.26',
     'ipykernel',
 ]
 

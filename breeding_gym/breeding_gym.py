@@ -68,7 +68,7 @@ class BreedingGym(gym.Env):
             axs = plt.subplots(nrows, ncols, figsize=(4*ncols, 4*nrows))[1]
             return axs.flatten()
 
-    def reset(self, seed=None, return_info=False, options=None):
+    def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
         self.step_idx = 0
@@ -87,10 +87,7 @@ class BreedingGym(gym.Env):
         if self.render_mode is not None:
             self._render_step(info)
 
-        if return_info:
-            return self.population, info
-        else:
-            return self.population
+        return self.population, info
 
     def step(self, action):
         """Action is an array of shape n x 2, where n is the number of crosses.

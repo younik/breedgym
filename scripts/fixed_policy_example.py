@@ -1,7 +1,10 @@
 import gym
 import breeding_gym  # noqa
 import numpy as np
-from breeding_gym.utils.index_functions import optimal_haploid_value, yield_index
+from breeding_gym.utils.index_functions import (
+    optimal_haploid_value,
+    yield_index
+)
 from breeding_gym.utils.paths import DATA_PATH
 
 if __name__ == '__main__':
@@ -19,11 +22,10 @@ if __name__ == '__main__':
                    render_kwargs={
                        "episode_names": ["yield", "OHV"],
                     },
-                   new_step_api=True
                    )
 
     for action in bests:
-        pop, info = env.reset(return_info=True, options={"index": yield_index})
+        pop, info = env.reset(options={"index": yield_index})
 
         for i in np.arange(num_generations):
             pop, r, terminated, truncated, info = env.step(action)
@@ -32,7 +34,7 @@ if __name__ == '__main__':
             print("------- GEBV -------", flush=True)
             print(mean_GEBV, flush=True)
 
-        pop, info = env.reset(return_info=True, options={"index": optimal_haploid_value})
+        pop, info = env.reset(options={"index": optimal_haploid_value})
         for i in np.arange(num_generations):
             pop, r, terminated, truncated, info = env.step(action)
 
@@ -40,4 +42,4 @@ if __name__ == '__main__':
             print("------- GEBV -------", flush=True)
             print(mean_GEBV, flush=True)
 
-    env.render(file_name="out.png")
+    env.render(file_name="figures/fixed_policy_example.png")

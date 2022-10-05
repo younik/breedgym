@@ -8,23 +8,19 @@ import numpy as np
 
 class SimplifiedBreedingGym(gym.Wrapper):
 
-    metadata = {"render_modes": ["matplotlib"], "render_fps": 1}
-
     def __init__(
         self,
-        env=None,
         individual_per_gen=2250,
         f_index=yield_index,
         **kwargs
     ):
-        if env is None:
-            env = BreedingGym(**kwargs)
-
+        env = BreedingGym(**kwargs)
         super().__init__(env)
+
         self.individual_per_gen = individual_per_gen
 
         self.observation_space = spaces.Dict({
-            "GEBV": spaces.Box(-15, 15, shape=(self.individual_per_gen,)),
+            "GEBV": spaces.Box(-1, 1, shape=(self.individual_per_gen,)),
             "corrcoef": spaces.Box(-0.5, 0.5, shape=(self.individual_per_gen,))
         })
 
@@ -35,18 +31,16 @@ class SimplifiedBreedingGym(gym.Wrapper):
 
         self.f_index = f_index
 
-    def reset(self, seed=None, return_info=False, options=None):
+    def reset(self, seed=None, options=None):
         if options is None:
             options = {}
         options["n_individuals"] = self.individual_per_gen
-        self.f_index = options["index"]
+        if "index" in options.keys():
+            self.f_index = options["index"]
 
-        _, info = self.env.reset(seed, True, options)
+        _, info = self.env.reset(seed, options)
 
-        if return_info:
-            return self._simplified_obs(info), info
-        else:
-            return self._simplified_obs(info)
+        return self._simplified_obs(info), info
 
     def step(self, action):
         n_bests = action["n_bests"]
@@ -74,9 +68,27 @@ class SimplifiedBreedingGym(gym.Wrapper):
 
         _, _, terminated, truncated, info = self.env.step(low_level_action)
         obs = self._simplified_obs(info)
-        return obs, np.mean(obs["GEBV"]), terminated, info#, truncated, info
+        return obs, np.mean(obs["GEBV"]), terminated, truncated, info
 
     def _simplified_obs(self, info):
-        corrcoef = self.env.corrcoef - 0.5
-        clipped_GEBV = info["GEBV"]["Yield"] - self.simulator.mean_gebv
-        return {"GEBV": clipped_GEBV.to_numpy(), "corrcoef": corrcoef}
+        norm_corrcoef = self.env.corrcoef * 2 - 1
+        norm_GEBV = info["GEBV"]["Yield"].to_numpy() - self.simulator.mean_gebv
+        norm_GEBV /= self.simulator.max_gebv - self.simulator.min_gebv
+        return {"GEBV": norm_GEBV, "corrcoef": norm_corrcoef}
+
+
+class KBestBreedingGym(SimplifiedBreedingGym):
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self.action_space = spaces.Discrete(
+            self.individual_per_gen - 1,
+            start=2
+        )
+
+    def step(self, action):
+        n_bests = action
+        n_crosses = n_bests * (n_bests - 1) // 2
+
+        return super().step({"n_bests": n_bests, "n_crosses": n_crosses})

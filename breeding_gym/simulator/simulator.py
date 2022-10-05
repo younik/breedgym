@@ -1,20 +1,18 @@
 from pathlib import Path
 import numpy as np
-import jax.numpy as jnp
-from jax import jit
 import pandas as pd
 from breeding_gym.simulator.gebv_model import GEBVModel
 from breeding_gym.utils.paths import DATA_PATH
 
 
-@jit
 def _cross(parents, crossover_mask):
-    crossover_mask = crossover_mask.astype(jnp.int8)
-    progenies = jnp.take_along_axis(
+    crossover_mask = crossover_mask.astype(np.int8)
+    progenies = np.take_along_axis(
         parents,
         crossover_mask[:, :, :, None],
         axis=-1
     )
+
     return progenies.squeeze(-1).transpose(0, 2, 1)
 
 
@@ -37,8 +35,8 @@ class BreedingSimulator:
         )
 
         mrk_effects = genetic_map_df["Effect"]
-        self.gebv_model = GEBVModel(
-            marker_effects=mrk_effects.to_numpy(jnp.float32)[:, None]
+        self.GEBV_model = GEBVModel(
+            marker_effects=mrk_effects.to_numpy(np.float32)[:, None]
         )
 
         self.n_markers = len(genetic_map_df)
@@ -66,7 +64,7 @@ class BreedingSimulator:
         return crossover_mask
 
     def GEBV(self, population: np.ndarray) -> pd.DataFrame:
-        GEBV = self.gebv_model(population)
+        GEBV = self.GEBV_model(population)
         return pd.DataFrame(GEBV, columns=self.trait_names)
 
     def phenotype(self, population: np.ndarray):
@@ -76,23 +74,23 @@ class BreedingSimulator:
 
     def corrcoef(self, population: np.ndarray):
         monoploid_enc = population.reshape(population.shape[0], -1)
-        mean_pop = jnp.mean(monoploid_enc, axis=0)
-        pop_with_centroid = jnp.vstack([mean_pop, monoploid_enc])
-        corrcoef = jnp.corrcoef(pop_with_centroid)
+        mean_pop = np.mean(monoploid_enc, axis=0, dtype=np.float32)
+        pop_with_centroid = np.vstack([mean_pop, monoploid_enc])
+        corrcoef = np.corrcoef(pop_with_centroid, dtype=np.float32)
         return corrcoef[0, 1:]
 
     @property
     def max_gebv(self):
-        return self.gebv_model.max
+        return self.GEBV_model.max
 
     @property
     def min_gebv(self):
-        return self.gebv_model.min
+        return self.GEBV_model.min
 
     @property
     def mean_gebv(self):
-        return self.gebv_model.mean
+        return self.GEBV_model.mean
 
     @property
     def var_gebv(self):
-        return self.gebv_model.mean
+        return self.GEBV_model.mean

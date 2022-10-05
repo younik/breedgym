@@ -32,7 +32,6 @@ if __name__ == '__main__':
                    individual_per_gen=individual_per_gen,
                    initial_population=DATA_PATH.joinpath("medium_geno.txt"),
                    genetic_map=DATA_PATH.joinpath("medium_genetic_map.txt"),
-                   new_step_api=True
                    )
 
     for label, index, color in zip(names, indices, colors):
@@ -40,7 +39,7 @@ if __name__ == '__main__':
         buffer_corr = np.empty((trials, num_generations))
 
         for trial_idx in range(trials):
-            pop, info = env.reset(return_info=True, options={"index": index})
+            pop, info = env.reset(options={"index": index})
 
             print("Trial:", trial_idx, flush=True)
             for i in range(num_generations):
@@ -67,5 +66,5 @@ if __name__ == '__main__':
 
 
 plt.figlegend(loc='upper right')
-plt.savefig("out.png")
-# plt.show()
+plt.savefig("figures/compare_indexes.png")
+plt.show()

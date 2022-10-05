@@ -11,3 +11,9 @@ register(
     entry_point='breeding_gym.wrappers:SimplifiedBreedingGym',
     max_episode_steps=10,
 )
+
+register(
+    id='KBestBreedingGym',
+    entry_point='breeding_gym.wrappers:KBestBreedingGym',
+    max_episode_steps=10,
+)

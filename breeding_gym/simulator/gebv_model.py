@@ -1,5 +1,4 @@
 import numpy as np
-import jax.numpy as jnp
 
 
 class GEBVModel:
@@ -20,5 +19,6 @@ class GEBVModel:
         self.var = (self.marker_effects**2).mean(axis=0) / 2
 
     def __call__(self, population: np.ndarray) -> np.ndarray:
-        monoploidy = population.sum(axis=-1)
-        return jnp.dot(monoploidy, self.marker_effects)
+        monoploidy = population.sum(axis=-1, dtype=np.int8)
+        dot = np.dot(monoploidy, self.marker_effects)
+        return dot
