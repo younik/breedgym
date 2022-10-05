@@ -80,6 +80,8 @@ class SimplifiedBreedingGym(gym.Wrapper):
 
 
 class KBestBreedingGym(SimplifiedBreedingGym):
+    
+    metadata = BreedingGym.metadata
 
     metadata = BreedingGym.metadata
 
