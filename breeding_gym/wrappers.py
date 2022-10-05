@@ -8,6 +8,8 @@ import numpy as np
 
 class SimplifiedBreedingGym(gym.Wrapper):
 
+    metadata = BreedingGym.metadata
+
     def __init__(
         self,
         individual_per_gen=2250,
@@ -78,6 +80,8 @@ class SimplifiedBreedingGym(gym.Wrapper):
 
 
 class KBestBreedingGym(SimplifiedBreedingGym):
+
+    metadata = BreedingGym.metadata
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
