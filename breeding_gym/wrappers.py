@@ -81,8 +81,6 @@ class SimplifiedBreedingGym(gym.Wrapper):
 
 class KBestBreedingGym(SimplifiedBreedingGym):
 
-    metadata = BreedingGym.metadata
-
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
