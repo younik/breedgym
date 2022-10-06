@@ -11,12 +11,15 @@ import matplotlib.patches as mpatches
 
 class BreedingGym(gym.Env):
 
-    metadata = {"render_modes": ["matplotlib"], "render_fps": 1}
     MAX_INDIVIDUALS = np.iinfo(np.int64).max
+    NUM_STEPS = 10
+
+    metadata = {"render_modes": ["matplotlib"], "render_fps": 1}
 
     def __init__(
         self,
         initial_population=DATA_PATH.joinpath("geno.txt"),
+        reward_shaping=False,
         render_mode=None,
         render_kwargs={},
         **kwargs
@@ -24,6 +27,7 @@ class BreedingGym(gym.Env):
         self.simulator = BreedingSimulator(**kwargs)
         self.germplasm = np.loadtxt(initial_population, dtype='bool')
         self.germplasm = self.germplasm.reshape(self.germplasm.shape[0], -1, 2)
+        self.reward_shaping = reward_shaping
 
         self.observation_space = spaces.Sequence(
             spaces.Box(0, 1, shape=(self.germplasm.shape[1], 2))
@@ -101,7 +105,11 @@ class BreedingGym(gym.Env):
         if self.render_mode is not None:
             self._render_step(info)
 
-        reward = np.mean(info["GEBV"]["Yield"])
+        if self.reward_shaping or self.step_idx == self.NUM_STEPS:
+            reward = np.mean(info["GEBV"]["Yield"])
+        else:
+            reward = 0
+            
         return self.population, reward, False, False, info
 
     def _render_step(self, info):
