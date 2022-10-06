@@ -1,20 +1,36 @@
 import gym
 from breeding_gym.utils.paths import DATA_PATH
-import pytest
-
 from breeding_gym.wrappers import ObserveStepWrapper
+import pytest
+import numpy as np
 
 
 def test_simplified_env():
+    individual_per_gen = 200
     env = gym.make("SimplifiedBreedingGym",
-                   individual_per_gen=200,
+                   individual_per_gen=individual_per_gen,
                    initial_population=DATA_PATH.joinpath("small_geno.txt"),
                    genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
                    )
-    env.reset()
-    env.step({"n_bests": 10, "n_crosses": 20})
-    env.step({"n_bests": 21, "n_crosses": 200})
-    env.step({"n_bests": 2, "n_crosses": 1})
+
+    obs, _ = env.reset()
+    assert len(obs["GEBV"]) == individual_per_gen
+    assert len(obs["corrcoef"]) == individual_per_gen
+    assert np.all(obs["GEBV"] >= -1) and np.all(obs["GEBV"] <= 1)
+    assert np.all(obs["corrcoef"] >= -1) and np.all(obs["corrcoef"] <= 1)
+
+    actions = [
+        {"n_bests": 10, "n_crosses": 20},
+        {"n_bests": 21, "n_crosses": 200},
+        {"n_bests": 2, "n_crosses": 1}
+    ]
+
+    for action in actions:
+        obs, _, _, _, _ = env.step(action)
+        assert len(obs["GEBV"]) == individual_per_gen
+        assert len(obs["corrcoef"]) == individual_per_gen
+        assert np.all(obs["GEBV"] >= -1) and np.all(obs["GEBV"] <= 1)
+        assert np.all(obs["corrcoef"] >= -1) and np.all(obs["corrcoef"] <= 1)
 
     with pytest.raises(Exception):
         env.step({"n_bests": 2, "n_crosses": 10})
@@ -27,15 +43,25 @@ def test_simplified_env():
 
 
 def test_kbest_env():
+    individual_per_gen = 200
     env = gym.make("KBestBreedingGym",
-                   individual_per_gen=200,
+                   individual_per_gen=individual_per_gen,
                    initial_population=DATA_PATH.joinpath("small_geno.txt"),
                    genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
                    )
-    env.reset()
-    env.step(10)
-    env.step(2)
-    env.step(200)
+    obs, _ = env.reset()
+    assert len(obs["GEBV"]) == individual_per_gen
+    assert len(obs["corrcoef"]) == individual_per_gen
+    assert np.all(obs["GEBV"] >= -1) and np.all(obs["GEBV"] <= 1)
+    assert np.all(obs["corrcoef"] >= -1) and np.all(obs["corrcoef"] <= 1)
+
+    actions = [10, 2, 200]
+    for action in actions:
+        obs, _, _, _, _ = env.step(action)
+        assert len(obs["GEBV"]) == individual_per_gen
+        assert len(obs["corrcoef"]) == individual_per_gen
+        assert np.all(obs["GEBV"] >= -1) and np.all(obs["GEBV"] <= 1)
+        assert np.all(obs["corrcoef"] >= -1) and np.all(obs["corrcoef"] <= 1)
 
     with pytest.raises(Exception):
         env.step(1)
