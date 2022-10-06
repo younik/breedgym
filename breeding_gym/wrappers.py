@@ -68,9 +68,9 @@ class SimplifiedBreedingGym(gym.Wrapper):
         low_level_action = np.repeat(low_level_action, n_offspring, axis=0)
         low_level_action = low_level_action[:self.individual_per_gen]
 
-        _, _, terminated, truncated, info = self.env.step(low_level_action)
+        _, rew, terminated, truncated, info = self.env.step(low_level_action)
         obs = self._simplified_obs(info)
-        return obs, np.mean(obs["GEBV"]), terminated, truncated, info
+        return obs, rew, terminated, truncated, info
 
     def _simplified_obs(self, info):
         norm_corrcoef = self.env.corrcoef * 2 - 1
