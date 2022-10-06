@@ -110,7 +110,7 @@ class BreedingGym(gym.Env):
             reward = np.mean(info["GEBV"]["Yield"])
         else:
             reward = 0
-    
+
         return self.population, reward, False, truncated, info
 
     def _render_step(self, info):
