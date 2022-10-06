@@ -95,3 +95,22 @@ class KBestBreedingGym(SimplifiedBreedingGym):
         n_crosses = n_bests * (n_bests - 1) // 2
 
         return super().step({"n_bests": n_bests, "n_crosses": n_crosses})
+
+
+class ObserveStepWrapper(gym.Wrapper):
+
+    def __init__(self, env):
+        super().__init__(env)
+        self.step_id = None
+        self.observation_space = spaces.Discrete(BreedingGym.MAX_EPISODE_STEPS)
+
+    def reset(self, **kwargs):
+        _, info = super().reset(**kwargs)
+        self.step_id = 0
+
+        return self.step_id, info
+
+    def step(self, action):
+        _, reward, terminated, truncated, info = super().step(action)
+        self.step_id += 1
+        return self.step_id, reward, terminated, truncated, info
