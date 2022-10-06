@@ -42,7 +42,7 @@ class SimplifiedBreedingGym(gym.Wrapper):
 
         _, info = self.env.reset(seed, options)
 
-        return self._simplified_obs(info), info
+        return self._simplified_obs(), info
 
     def step(self, action):
         n_bests = action["n_bests"]
@@ -69,14 +69,15 @@ class SimplifiedBreedingGym(gym.Wrapper):
         low_level_action = low_level_action[:self.individual_per_gen]
 
         _, rew, terminated, truncated, info = self.env.step(low_level_action)
-        obs = self._simplified_obs(info)
+        obs = self._simplified_obs()
         return obs, rew, terminated, truncated, info
 
-    def _simplified_obs(self, info):
-        norm_corrcoef = self.env.corrcoef * 2 - 1
-        norm_GEBV = info["GEBV"]["Yield"].to_numpy() - self.simulator.mean_gebv
-        norm_GEBV /= self.simulator.max_gebv - self.simulator.min_gebv
-        return {"GEBV": norm_GEBV, "corrcoef": norm_corrcoef}
+    def _simplified_obs(self):
+        norm_corrcoef = self.corrcoef * 2 - 1
+        return {
+            "GEBV": self.norm_GEBV["Yield"].to_numpy(),
+            "corrcoef": norm_corrcoef
+        }
 
 
 class KBestBreedingGym(SimplifiedBreedingGym):
