@@ -97,3 +97,26 @@ def test_kbest_env():
 
     with pytest.raises(Exception):
         env.step(201)
+
+
+def test_reward_shaping():
+    env = gym.make("BreedingGym",
+                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
+                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+                   reward_shaping=False
+                   )
+
+    pop, _ = env.reset()
+
+    for _ in range(9):
+        action = np.asarray(env.action_space.sample()) % len(pop)
+        pop, reward, _, truncated, _ = env.step(action)
+
+        assert reward == 0
+        assert not truncated
+
+    action = np.asarray(env.action_space.sample()) % len(pop)
+    _, reward, _, truncated, _ = env.step(action)
+
+    assert reward != 0
+    assert truncated

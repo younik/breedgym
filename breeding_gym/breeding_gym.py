@@ -107,7 +107,7 @@ class BreedingGym(gym.Env):
 
         truncated = self.step_idx == self.MAX_EPISODE_STEPS
         if self.reward_shaping or truncated:
-            reward = np.mean(self.norm_GEBV)
+            reward = np.mean(self.norm_GEBV.to_numpy())
         else:
             reward = 0
 
