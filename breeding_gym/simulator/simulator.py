@@ -93,4 +93,4 @@ class BreedingSimulator:
 
     @property
     def var_gebv(self):
-        return self.GEBV_model.mean
+        return self.GEBV_model.var
