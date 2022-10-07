@@ -1,4 +1,4 @@
-from math import ceil
+from math import ceil, sqrt
 from breeding_gym.breeding_gym import BreedingGym
 from breeding_gym.utils.index_functions import yield_index
 import gym
@@ -48,6 +48,10 @@ class SimplifiedBreedingGym(gym.Wrapper):
         n_bests = action["n_bests"]
         n_crosses = action["n_crosses"]
         n_offspring = ceil(self.individual_per_gen / n_crosses)
+        if n_bests > self.individual_per_gen:
+            raise ValueError("n_bests must be lower than individual_per_gen")
+        if n_crosses > self.individual_per_gen:
+            raise ValueError("n_crosses must be lower than individual_per_gen")
 
         indices = self.f_index(self)
 
@@ -85,10 +89,9 @@ class KBestBreedingGym(SimplifiedBreedingGym):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        self.action_space = spaces.Discrete(
-            self.individual_per_gen - 1,
-            start=2
-        )
+        # max x, s.t. x * (x - 1) / 2 < individual_per_gen
+        max_best = (1 + sqrt(1 + 8 * self.individual_per_gen)) // 2
+        self.action_space = spaces.Discrete(int(max_best) - 1, start=2)
 
     def step(self, action):
         n_bests = action

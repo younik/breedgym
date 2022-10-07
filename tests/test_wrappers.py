@@ -33,6 +33,9 @@ def test_simplified_env():
         assert np.all(obs["corrcoef"] >= -1) and np.all(obs["corrcoef"] <= 1)
 
     with pytest.raises(Exception):
+        env.step({"n_bests": 100, "n_crosses": 201})
+
+    with pytest.raises(Exception):
         env.step({"n_bests": 2, "n_crosses": 10})
 
     with pytest.raises(Exception):
@@ -55,7 +58,7 @@ def test_kbest_env():
     assert np.all(obs["GEBV"] >= -1) and np.all(obs["GEBV"] <= 1)
     assert np.all(obs["corrcoef"] >= -1) and np.all(obs["corrcoef"] <= 1)
 
-    actions = [10, 2, 200]
+    actions = [10, 2, 20]
     for action in actions:
         obs, _, _, _, _ = env.step(action)
         assert len(obs["GEBV"]) == individual_per_gen
@@ -67,7 +70,7 @@ def test_kbest_env():
         env.step(1)
 
     with pytest.raises(Exception):
-        env.step(201)
+        env.step(21)
 
 
 def test_observe_wrapper():
