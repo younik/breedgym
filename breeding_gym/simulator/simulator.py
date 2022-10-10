@@ -30,9 +30,7 @@ class BreedingSimulator:
         self.h2 = np.array(h2)
         self.trait_names = trait_names
 
-        genetic_map_df = pd.read_table(
-            genetic_map, sep="\t", index_col="Marker"
-        )
+        genetic_map_df = pd.read_table(genetic_map, sep="\t")
 
         mrk_effects = genetic_map_df["Effect"]
         self.GEBV_model = GEBVModel(
@@ -78,6 +76,15 @@ class BreedingSimulator:
         pop_with_centroid = np.vstack([mean_pop, monoploid_enc])
         corrcoef = np.corrcoef(pop_with_centroid, dtype=np.float32)
         return corrcoef[0, 1:]
+
+    def genetic_diversity(self, parents: np.ndarray):
+        parents = parents.transpose(0, 2, 1, 3)
+        parents.reshape(parents.shape[0], parents.shape[1], -1)
+
+        max_GEBV = self.GEBV_model.optimal_haploid_value(parents)
+        neg_GEBV = GEBVModel(-self.GEBV_model.marker_effects)
+        min_GEBV = -neg_GEBV.optimal_haploid_value(parents)
+        return max_GEBV - min_GEBV
 
     @property
     def max_gebv(self):
