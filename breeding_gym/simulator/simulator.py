@@ -77,15 +77,6 @@ class BreedingSimulator:
         corrcoef = np.corrcoef(pop_with_centroid, dtype=np.float32)
         return corrcoef[0, 1:]
 
-    def genetic_diversity(self, parents: np.ndarray):
-        parents = parents.transpose(0, 2, 1, 3)
-        parents.reshape(parents.shape[0], parents.shape[1], -1)
-
-        max_GEBV = self.GEBV_model.optimal_haploid_value(parents)
-        neg_GEBV = GEBVModel(-self.GEBV_model.marker_effects)
-        min_GEBV = -neg_GEBV.optimal_haploid_value(parents)
-        return max_GEBV - min_GEBV
-
     @property
     def max_gebv(self):
         return self.GEBV_model.max

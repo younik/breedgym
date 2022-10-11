@@ -5,13 +5,17 @@ def yield_index(env):
     return env.GEBV["Yield"]
 
 
+def optimal_haploid_value(env):
+    GEBV_model = env.simulator.GEBV_model
+    return GEBV_model.optimal_haploid_value(env.population).squeeze()
+
+
 def optimal_haploid_pop(env):
     optimal_haploid_pop = np.empty(
         (env.population.shape[0], env.population.shape[1]), dtype='bool'
     )
 
-    GEBV_model = env.simulator.GEBV_model
-    positive_mask = GEBV_model.marker_effects[:, 0] > 0
+    positive_mask = env.simulator.GEBV_model.positive_mask.squeeze()
 
     optimal_haploid_pop[:, positive_mask] = np.logical_or(
         env.population[:, positive_mask, 0],
@@ -23,11 +27,6 @@ def optimal_haploid_pop(env):
     )
 
     return optimal_haploid_pop
-
-
-def optimal_haploid_value(env):
-    oh_pop = optimal_haploid_pop(env)
-    return 2 * env.simulator.GEBV(oh_pop[:, :, None])["Yield"]
 
 
 def optimal_population_value(n):
@@ -47,7 +46,7 @@ def optimal_population_value(n):
                 G[:, ~positive_mask], current_set[~positive_mask]
             )
 
-            best_idx = np.argmax(env.simulator.GEBV(G[:, :, None])["Yield"])
+            best_idx = np.argmax(env.simulator.GEBV(G[:, :, None]))
             output[best_idx] = True
             current_set = G[best_idx]
             G[best_idx] = ~positive_mask  # "remove" it

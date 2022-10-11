@@ -12,18 +12,20 @@ class SimplifiedBreedingGym(gym.Wrapper):
 
     def __init__(
         self,
+        env=None,
         individual_per_gen=2250,
         f_index=yield_index,
         **kwargs
     ):
-        env = BreedingGym(**kwargs)
+        if env is None:
+            env = BreedingGym(**kwargs)
         super().__init__(env)
 
         self.individual_per_gen = individual_per_gen
 
         self.observation_space = spaces.Dict({
             "GEBV": spaces.Box(-1, 1, shape=(self.individual_per_gen,)),
-            "corrcoef": spaces.Box(-0.5, 0.5, shape=(self.individual_per_gen,))
+            "corrcoef": spaces.Box(-1, 1, shape=(self.individual_per_gen,))
         })
 
         self.action_space = spaces.Dict({
@@ -40,14 +42,19 @@ class SimplifiedBreedingGym(gym.Wrapper):
         if "index" in options.keys():
             self.f_index = options["index"]
 
-        _, info = self.env.reset(seed, options)
+        _, info = self.env.reset(seed=seed, options=options)
 
         return self._simplified_obs(), info
 
     def step(self, action):
         n_bests = action["n_bests"]
         n_crosses = action["n_crosses"]
-        n_offspring = ceil(self.individual_per_gen / n_crosses)
+        try:
+            n_offspring = ceil(self.individual_per_gen / n_crosses)
+        except Exception as e:
+            print(self.individual_per_gen)
+            print(n_crosses)
+            raise e
         if n_bests > self.individual_per_gen:
             raise ValueError("n_bests must be lower than individual_per_gen")
         if n_crosses > self.individual_per_gen:
