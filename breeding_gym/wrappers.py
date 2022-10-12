@@ -49,16 +49,20 @@ class SimplifiedBreedingGym(gym.Wrapper):
     def step(self, action):
         n_bests = action["n_bests"]
         n_crosses = action["n_crosses"]
-        try:
-            n_offspring = ceil(self.individual_per_gen / n_crosses)
-        except Exception as e:
-            print(self.individual_per_gen)
-            print(n_crosses)
-            raise e
+        n_offspring = ceil(self.individual_per_gen / n_crosses)
+
+        if n_bests < 2:
+            raise ValueError("n_bests must be higher or equal to 2")
+        if n_crosses < 1:
+            raise ValueError("n_crosses must be higher or equal to 1")
         if n_bests > self.individual_per_gen:
-            raise ValueError("n_bests must be lower than individual_per_gen")
+            raise ValueError(
+                "n_bests must be lower or equal to individual_per_gen"
+            )
         if n_crosses > self.individual_per_gen:
-            raise ValueError("n_crosses must be lower than individual_per_gen")
+            raise ValueError(
+                "n_crosses must be lower or equal to individual_per_gen"
+            )
 
         indices = self.f_index(self)
 

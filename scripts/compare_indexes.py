@@ -102,5 +102,5 @@ if __name__ == '__main__':
 
 
 plt.figlegend(loc='upper right')
-plt.savefig("figures/compare_indexes.png")
+plt.savefig(f"figures/compare_indexes_{trials}t.png")
 plt.show()
