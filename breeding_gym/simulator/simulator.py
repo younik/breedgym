@@ -8,15 +8,15 @@ import jax.numpy as jnp
 
 
 @jax.jit
-def _cross(parents, crossover_mask):
+def _cross(parent, crossover_mask):
     crossover_mask = crossover_mask.astype(jnp.int8)
     progenies = jnp.take_along_axis(
-        parents,
-        crossover_mask[:, :, None],
+        parent,
+        crossover_mask[:, None],
         axis=-1
     )
 
-    return progenies.squeeze(-1).T
+    return progenies.squeeze()
 
 
 class BreedingSimulator:
@@ -41,31 +41,34 @@ class BreedingSimulator:
         )
 
         self.n_markers = len(genetic_map_df)
-        chr_map = genetic_map_df['Chr']
-        self.marker_chr, self.chr_set = chr_map.factorize()
-
         self.recombination_vec = genetic_map_df["RecombRate"].to_numpy()
 
         # change semantic to "recombine now" instead of "recombine after"
         self.recombination_vec[1:] = self.recombination_vec[:-1]
 
+        chr_map = genetic_map_df['Chr']
         first_mrk_map = np.zeros(len(chr_map), dtype='bool')
         first_mrk_map[1:] = chr_map[1:].values != chr_map[:-1].values
         first_mrk_map[0] = True
         self.recombination_vec[first_mrk_map] = 0.5  # first equally likely
 
-    def _cross_map(self, parents: np.ndarray):
-        crossover_mask = self._get_crossover_mask()
-        return _cross(parents, crossover_mask)
-
     def cross(self, parents: np.ndarray):
-        cross_map = jax.vmap(self._cross_map, 0, 0)
-        return cross_map(parents)
+        cross_progeny = jax.vmap(self._cross_progeny, 0, 0)
+        res = cross_progeny(parents)
+        return res
+
+    def _cross_progeny(self, parents: np.ndarray):
+        cross_parent = jax.vmap(self._cross_parent, 0, 1)
+        return cross_parent(parents)
+
+    def _cross_parent(self, parent: np.ndarray):
+        crossover_mask = self._get_crossover_mask()
+        return _cross(parent, crossover_mask)
 
     def _get_crossover_mask(self):
-        samples = np.random.rand(2, self.n_markers)
-        recombination_sites = samples < self.recombination_vec[None, :]
-        return np.logical_xor.accumulate(recombination_sites, axis=1)
+        samples = np.random.rand(self.n_markers)
+        recombination_sites = samples < self.recombination_vec
+        return np.logical_xor.accumulate(recombination_sites)
 
     def GEBV(self, population: np.ndarray) -> pd.DataFrame:
         GEBV = self.GEBV_model(population)
