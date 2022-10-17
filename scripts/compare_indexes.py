@@ -83,7 +83,7 @@ if __name__ == '__main__':
         xticks = np.arange(num_generations + 1)
 
         axs[0].set_xticks(xticks)
-        axs[0].set_title("GEBV")
+        axs[0].set_title("Genetic Gain (%)")
         axs[0].grid(axis='y')
         axs[0].set_xlabel('Generations [Years]')
         axs[0].plot(xticks, gg - gg[0], label=label)

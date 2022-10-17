@@ -10,9 +10,8 @@ def test_cross_r(idx):
         genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
     )
 
-    def const_co_mask(n_progenies):
-        shape = (n_progenies, 2, simulator.n_markers)
-        return idx * np.ones(shape, dtype="bool")
+    def const_co_mask():
+        return idx * np.ones((2, simulator.n_markers), dtype="bool")
 
     simulator._get_crossover_mask = const_co_mask
     size = (1, 2, simulator.n_markers, 2)
@@ -38,7 +37,6 @@ def test_equal_parents():
 
     parents = np.ones((1, 2, simulator.n_markers, 2), dtype="bool")
     child = simulator.cross(parents)
-    print(child)
     assert np.all(child == 1)
 
 

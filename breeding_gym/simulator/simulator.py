@@ -3,17 +3,20 @@ import numpy as np
 import pandas as pd
 from breeding_gym.simulator.gebv_model import GEBVModel
 from breeding_gym.utils.paths import DATA_PATH
+import jax
+import jax.numpy as jnp
 
 
+@jax.jit
 def _cross(parents, crossover_mask):
-    crossover_mask = crossover_mask.astype(np.int8)
-    progenies = np.take_along_axis(
+    crossover_mask = crossover_mask.astype(jnp.int8)
+    progenies = jnp.take_along_axis(
         parents,
-        crossover_mask[:, :, :, None],
+        crossover_mask[:, :, None],
         axis=-1
     )
 
-    return progenies.squeeze(-1).transpose(0, 2, 1)
+    return progenies.squeeze(-1).T
 
 
 class BreedingSimulator:
@@ -51,15 +54,18 @@ class BreedingSimulator:
         first_mrk_map[0] = True
         self.recombination_vec[first_mrk_map] = 0.5  # first equally likely
 
-    def cross(self, parents: np.ndarray):
-        crossover_mask = self._get_crossover_mask(parents.shape[0])
+    def _cross_map(self, parents: np.ndarray):
+        crossover_mask = self._get_crossover_mask()
         return _cross(parents, crossover_mask)
 
-    def _get_crossover_mask(self, n_progenies):
-        samples = np.random.rand(n_progenies, 2, self.n_markers)
-        recombination_sites = samples < self.recombination_vec[None, None, :]
-        crossover_mask = np.logical_xor.accumulate(recombination_sites, axis=2)
-        return crossover_mask
+    def cross(self, parents: np.ndarray):
+        cross_map = jax.vmap(self._cross_map, 0, 0)
+        return cross_map(parents)
+
+    def _get_crossover_mask(self):
+        samples = np.random.rand(2, self.n_markers)
+        recombination_sites = samples < self.recombination_vec[None, :]
+        return np.logical_xor.accumulate(recombination_sites, axis=1)
 
     def GEBV(self, population: np.ndarray) -> pd.DataFrame:
         GEBV = self.GEBV_model(population)
