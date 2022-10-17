@@ -11,7 +11,7 @@ def test_cross_r(idx):
     )
 
     def const_co_mask():
-        return idx * np.ones((2, simulator.n_markers), dtype="bool")
+        return idx * np.ones(simulator.n_markers, dtype="bool")
 
     simulator._get_crossover_mask = const_co_mask
     size = (1, 2, simulator.n_markers, 2)

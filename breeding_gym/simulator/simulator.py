@@ -33,11 +33,12 @@ class BreedingSimulator:
         self.h2 = np.array(h2)
         self.trait_names = trait_names
 
-        genetic_map_df = pd.read_table(genetic_map, sep="\t")
+        types = {'Chr': 'int32', 'RecombRate': 'float32', "Effect": 'float32'}
+        genetic_map_df = pd.read_table(genetic_map, sep="\t", dtype=types)
 
         mrk_effects = genetic_map_df["Effect"]
         self.GEBV_model = GEBVModel(
-            marker_effects=mrk_effects.to_numpy(np.float32)[:, None]
+            marker_effects=mrk_effects.to_numpy()[:, None]
         )
 
         self.n_markers = len(genetic_map_df)
