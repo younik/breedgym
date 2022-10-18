@@ -5,6 +5,8 @@ from breeding_gym.simulator.gebv_model import GEBVModel
 from breeding_gym.utils.paths import DATA_PATH
 import jax
 import jax.numpy as jnp
+from functools import partial
+
 
 
 @jax.jit
@@ -53,16 +55,9 @@ class BreedingSimulator:
         first_mrk_map[0] = True
         self.recombination_vec[first_mrk_map] = 0.5  # first equally likely
 
-    def cross(self, parents: np.ndarray):
-        cross_progeny = jax.vmap(self._cross_progeny, 0, 0)
-        res = cross_progeny(parents)
-        return res
-
-    def _cross_progeny(self, parents: np.ndarray):
-        cross_parent = jax.vmap(self._cross_parent, 0, 1)
-        return cross_parent(parents)
-
-    def _cross_parent(self, parent: np.ndarray):
+    @partial(jax.vmap, in_axes=(None, 0))  # parallelize across individuals
+    @partial(jax.vmap, in_axes=(None, 0), out_axes=1)  # parallelize across parents
+    def cross(self, parent: np.ndarray):
         crossover_mask = self._get_crossover_mask()
         return _cross(parent, crossover_mask)
 
