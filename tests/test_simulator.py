@@ -40,6 +40,39 @@ def test_equal_parents():
     assert np.all(child == 1)
 
 
+def test_ad_hoc_cross():
+    simulator = BreedingSimulator(
+        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt")
+    )
+
+    parent_0 = np.array([
+        [0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0],
+        [1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1]
+    ], dtype='bool')
+    parent_1 = np.array([
+        [0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0],
+        [0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0]
+    ], dtype='bool')
+    assert parent_0.shape == parent_1.shape
+
+    co_mask = np.array(
+        [0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+        dtype=np.int8
+    )
+    assert len(co_mask) == parent_1.shape[1]
+
+    simulator._get_crossover_mask = lambda : co_mask
+    parents = np.empty((1, 2, *parent_0.T.shape), dtype='bool')
+    parents[0, 0] = parent_0.T
+    parents[0, 1] = parent_1.T
+    child = simulator.cross(parents)
+
+    assert child.shape == (1, *parent_0.T.shape)
+
+    for idx in range(len(co_mask)):
+        assert child[1, idx, 0] == parent_0[co_mask[idx], idx]
+        assert child[1, idx, 1] == parent_1[co_mask[idx], idx]
+
 def test_phenotyping():
     simulator = BreedingSimulator(
         genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
