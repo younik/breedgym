@@ -1,16 +1,21 @@
 from pathlib import Path
-import numpy as np
+from typing import List, Optional
 import pandas as pd
 from breeding_gym.simulator.gebv_model import GEBVModel
 from breeding_gym.utils.paths import DATA_PATH
+import numpy as np
 import jax
 import jax.numpy as jnp
 from functools import partial
-
+import random
 
 
 @jax.jit
-def _cross(parent, crossover_mask):
+def _cross(parent, recombination_vec, random_key):
+    samples = jax.random.uniform(random_key, shape=recombination_vec.shape)
+    rec_sites = samples < recombination_vec
+    crossover_mask =  jax.lax.associative_scan(jnp.logical_xor, rec_sites)
+
     crossover_mask = crossover_mask.astype(jnp.int8)
     progenies = jnp.take_along_axis(
         parent,
@@ -26,13 +31,14 @@ class BreedingSimulator:
     def __init__(
         self,
         genetic_map: Path = DATA_PATH.joinpath("genetic_map.txt"),
-        trait_names: list[str] = ["Yield"],
-        h2: list[int] | None = None
+        trait_names: List["str"] = ["Yield"],
+        h2: Optional[List[int]] = None,
+        seed: Optional[int] = None
     ):
         if h2 is None:
             h2 = len(trait_names) * [1]
         assert len(h2) == len(trait_names)
-        self.h2 = np.array(h2)
+        self.h2 = jnp.array(h2)
         self.trait_names = trait_names
 
         types = {'Chr': 'int32', 'RecombRate': 'float32', "Effect": 'float32'}
@@ -55,31 +61,33 @@ class BreedingSimulator:
         first_mrk_map[0] = True
         self.recombination_vec[first_mrk_map] = 0.5  # first equally likely
 
+        self.random_key = None
+        if seed is None:
+            seed = random.randint(0, 2**32)
+        self.set_seed(seed)
+
+    def set_seed(self, seed: int):
+        self.random_key = jax.random.PRNGKey(seed)
+
     @partial(jax.vmap, in_axes=(None, 0))  # parallelize across individuals
     @partial(jax.vmap, in_axes=(None, 0), out_axes=1)  # parallelize across parents
-    def cross(self, parent: np.ndarray):
-        crossover_mask = self._get_crossover_mask()
-        return _cross(parent, crossover_mask)
+    def cross(self, parent: jnp.ndarray):
+        return _cross(parent, self.recombination_vec, self.random_key)
 
-    def _get_crossover_mask(self):
-        samples = np.random.rand(self.n_markers)
-        recombination_sites = samples < self.recombination_vec
-        return np.logical_xor.accumulate(recombination_sites)
-
-    def GEBV(self, population: np.ndarray) -> pd.DataFrame:
+    def GEBV(self, population: jnp.ndarray) -> pd.DataFrame:
         GEBV = self.GEBV_model(population)
         return pd.DataFrame(GEBV, columns=self.trait_names)
 
-    def phenotype(self, population: np.ndarray):
-        env_effect = (1 - self.h2) * self.var_gebv * \
-            np.random.randn(len(self.h2))
+    def phenotype(self, population: jnp.ndarray):
+        noise = jax.random.normal(self.random_key, shape=(len(self.h2),))
+        env_effect = (1 - self.h2) * (self.var_gebv * noise + self.mean_gebv)
         return self.h2 * self.GEBV(population) + env_effect
 
-    def corrcoef(self, population: np.ndarray):
+    def corrcoef(self, population: jnp.ndarray):
         monoploid_enc = population.reshape(population.shape[0], -1)
-        mean_pop = np.mean(monoploid_enc, axis=0, dtype=np.float32)
-        pop_with_centroid = np.vstack([mean_pop, monoploid_enc])
-        corrcoef = np.corrcoef(pop_with_centroid, dtype=np.float32)
+        mean_pop = jnp.mean(monoploid_enc, axis=0)
+        pop_with_centroid = jnp.vstack([mean_pop, monoploid_enc])
+        corrcoef = jnp.corrcoef(pop_with_centroid)
         return corrcoef[0, 1:]
 
     @property
