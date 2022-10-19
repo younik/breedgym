@@ -1,3 +1,4 @@
+import numpy as np
 import jax.numpy as jnp
 
 
@@ -25,15 +26,15 @@ class GEBVModel:
     def optimal_haploid_value(self, population):
         positive_mask = self.positive_mask.squeeze()
 
-        optimal_haploid_pop = jnp.empty(
+        optimal_haploid_pop = np.empty(
             (population.shape[0], population.shape[1]), dtype='bool'
         )
 
-        optimal_haploid_pop[:, positive_mask] = jnp.any(
+        optimal_haploid_pop[:, positive_mask] = np.any(
             population[:, positive_mask],
             axis=-1
         )
-        optimal_haploid_pop[:, ~positive_mask] = jnp.all(
+        optimal_haploid_pop[:, ~positive_mask] = np.all(
             population[:, ~positive_mask],
             axis=-1
         )
