@@ -1,14 +1,13 @@
-import cProfile
 from breeding_gym.simulator import BreedingSimulator
 import numpy as np
 from breeding_gym.utils.paths import DATA_PATH
 import timeit
 
 
-# import os
-# os.environ["CUDA_VISIBLE_DEVICES"] = ""
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-n_progenies = 100
+n_progenies = 300
 n_markers = 1406757
 
 size = (n_progenies, 2, n_markers, 2)
@@ -19,5 +18,5 @@ simulator = BreedingSimulator(
 )
 
 repeats = 100
-t = timeit.timeit(lambda : simulator.cross(parents), number=repeats) / repeats
+t = timeit.timeit(lambda: simulator.cross(parents), number=repeats) / repeats
 print(t)
