@@ -89,7 +89,3 @@ def test_observe_wrapper():
 
     obs, _ = env.reset()
     assert obs == 0
-
-
-if __name__ == "__main__":
-    test_simplified_env()
