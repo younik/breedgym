@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 import pandas as pd
 from breeding_gym.simulator.gebv_model import GEBVModel
 from breeding_gym.utils.paths import DATA_PATH
@@ -30,7 +30,7 @@ class BreedingSimulator:
 
     def __init__(
         self,
-        genetic_map: Path = DATA_PATH.joinpath("genetic_map.txt"),
+        genetic_map: Union[Path, pd.DataFrame] = DATA_PATH.joinpath("genetic_map.txt"),
         trait_names: List["str"] = ["Yield"],
         h2: Optional[List[int]] = None,
         seed: Optional[int] = None
@@ -41,21 +41,22 @@ class BreedingSimulator:
         self.h2 = jnp.array(h2)
         self.trait_names = trait_names
 
-        types = {'Chr': 'int32', 'RecombRate': 'float32', "Effect": 'float32'}
-        genetic_map_df = pd.read_table(genetic_map, sep="\t", dtype=types)
+        if isinstance(genetic_map, Path):
+            types = {'Chr': 'int32', 'RecombRate': 'float32', "Effect": 'float32'}
+            genetic_map = pd.read_table(genetic_map, sep="\t", dtype=types)
 
-        mrk_effects = genetic_map_df["Effect"]
+        mrk_effects = genetic_map["Effect"]
         self.GEBV_model = GEBVModel(
             marker_effects=mrk_effects.to_numpy()[:, None]
         )
 
-        self.n_markers = len(genetic_map_df)
-        self.recombination_vec = genetic_map_df["RecombRate"].to_numpy()
+        self.n_markers = len(genetic_map)
+        self.recombination_vec = genetic_map["RecombRate"].to_numpy()
 
         # change semantic to "recombine now" instead of "recombine after"
         self.recombination_vec[1:] = self.recombination_vec[:-1]
 
-        chr_map = genetic_map_df['Chr']
+        chr_map = genetic_map['Chr']
         first_mrk_map = np.zeros(len(chr_map), dtype='bool')
         first_mrk_map[1:] = chr_map[1:].values != chr_map[:-1].values
         first_mrk_map[0] = True
@@ -68,6 +69,14 @@ class BreedingSimulator:
 
     def set_seed(self, seed: int):
         self.random_key = jax.random.PRNGKey(seed)
+
+    def load_population(self, file_name: Path):
+        population = np.loadtxt(file_name, dtype='bool')
+        return population.reshape(population.shape[0], self.n_markers, 2)
+
+    def save_population(self, population: np.ndarray, file_name: Path):
+        flatten_pop = population.reshape(population.shape[0], -1)
+        np.savetxt(file_name, flatten_pop, fmt="%i")
 
     @partial(jax.vmap, in_axes=(None, 0))  # parallelize across individuals
     @partial(jax.vmap, in_axes=(None, 0), out_axes=1)  # parallelize across parents

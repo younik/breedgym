@@ -25,8 +25,7 @@ class BreedingGym(gym.Env):
         **kwargs
     ):
         self.simulator = BreedingSimulator(**kwargs)
-        self.germplasm = np.loadtxt(initial_population, dtype='bool')
-        self.germplasm = self.germplasm.reshape(self.germplasm.shape[0], -1, 2)
+        self.germplasm = self.simulator.load_population(initial_population)
         self.reward_shaping = reward_shaping
 
         self.observation_space = spaces.Sequence(
