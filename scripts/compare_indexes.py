@@ -40,11 +40,6 @@ if __name__ == '__main__':
     n_crosses = 10
 
     trials = 100
-    indices = [
-        yield_index,
-        optimal_haploid_value,
-        optimal_population_value(n_bests)
-    ]
     names = ["standard", "OHV", "OPV"]
     colors = ["b", "g", "r"]
 
@@ -57,6 +52,13 @@ if __name__ == '__main__':
                    )
     env = GeneticDiversityWrapper(env)
     env = SimplifiedBreedingGym(env, individual_per_gen=individual_per_gen)
+
+    GEBV_model = env.simulator.GEBV_model
+    indices = [
+        yield_index(GEBV_model),
+        optimal_haploid_value(GEBV_model),
+        optimal_population_value(GEBV_model, n_bests)
+    ]
 
     for label, index, color in zip(names, indices, colors):
         buffer_gg = np.empty((trials, num_generations + 1))

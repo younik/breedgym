@@ -21,11 +21,12 @@ if __name__ == '__main__':
                    render_mode="matplotlib",
                    render_kwargs={
                        "episode_names": ["yield", "OHV"],
-                    },
+                   },
                    )
 
+    GEBV_model = env.simulator.GEBV_model
     for action in bests:
-        pop, info = env.reset(options={"index": yield_index})
+        pop, info = env.reset(options={"index": yield_index(GEBV_model)})
 
         for i in np.arange(num_generations):
             pop, r, terminated, truncated, info = env.step(action)
@@ -34,7 +35,9 @@ if __name__ == '__main__':
             print("------- GEBV -------", flush=True)
             print(mean_GEBV, flush=True)
 
-        pop, info = env.reset(options={"index": optimal_haploid_value})
+        pop, info = env.reset(
+            options={"index": optimal_haploid_value(GEBV_model)}
+        )
         for i in np.arange(num_generations):
             pop, r, terminated, truncated, info = env.step(action)
 

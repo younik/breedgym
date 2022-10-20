@@ -14,12 +14,15 @@ class SimplifiedBreedingGym(gym.Wrapper):
         self,
         env=None,
         individual_per_gen=2250,
-        f_index=yield_index,
+        f_index=None,
         **kwargs
     ):
         if env is None:
             env = BreedingGym(**kwargs)
         super().__init__(env)
+
+        if f_index is None:
+            f_index = yield_index(env.simulator.GEBV_model)
 
         self.individual_per_gen = individual_per_gen
 
@@ -53,33 +56,22 @@ class SimplifiedBreedingGym(gym.Wrapper):
 
         if n_bests < 2:
             raise ValueError("n_bests must be higher or equal to 2")
-        if n_crosses < 1:
-            raise ValueError("n_crosses must be higher or equal to 1")
-        if n_bests > self.individual_per_gen:
-            raise ValueError(
-                "n_bests must be lower or equal to individual_per_gen"
-            )
         if n_crosses > self.individual_per_gen:
             raise ValueError(
                 "n_crosses must be lower or equal to individual_per_gen"
             )
 
-        indices = self.f_index(self)
-
-        # retrieve the `n_bests` best population indices
-        best_pop = np.argpartition(indices, -n_bests)[-n_bests:]
-
-        mesh1, mesh2 = np.meshgrid(best_pop, best_pop)
-        triu_indices = np.triu_indices(n_bests, k=1)
-        mesh1 = mesh1[triu_indices]
-        mesh2 = mesh2[triu_indices]
-        low_level_action = np.stack([mesh1, mesh2], axis=1)
-
-        random_select_idx = np.random.choice(
-            len(low_level_action), n_crosses, replace=False
+        self.env.population = self.simulator.select(
+            population=self.env.population,
+            k=n_bests,
+            f_index=self.f_index
         )
-        low_level_action = low_level_action[random_select_idx]
 
+        diallel_indices = self.simulator._diallel_indices(n_bests)
+        random_select_idx = np.random.choice(
+            len(diallel_indices), n_crosses, replace=False
+        )
+        low_level_action = diallel_indices[random_select_idx]
         low_level_action = np.repeat(low_level_action, n_offspring, axis=0)
         low_level_action = low_level_action[:self.individual_per_gen]
 
