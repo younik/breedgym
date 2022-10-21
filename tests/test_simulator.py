@@ -9,34 +9,55 @@ class MockSimulator(BreedingSimulator):
 
     def __init__(
         self,
-        marker_effects = None,
-        recombination_vec = None,
-        n_chr=10
+        n_markers=None,
+        marker_effects=None,
+        recombination_vec=None,
+        n_chr=10,
+        **kwargs
     ):
-        if marker_effects is not None:
-            n_markers = len(marker_effects)
-        elif recombination_vec is not None:
-            n_markers = len(recombination_vec)
-        else:
-            raise Exception("You must specify at least one between marker_effects and recombination_vec")
-        
+        self.n_markers = n_markers
+        if self.n_markers is None:
+            if marker_effects is not None:
+                self.n_markers = len(marker_effects)
+            elif recombination_vec is not None:
+                self.n_markers = len(recombination_vec)
+            else:
+                raise Exception(
+                    "You must specify at least one between ",
+                    "n_markers, marker_effects and recombination_vec"
+                )
+
         if marker_effects is None:
-            marker_effects = np.random.randn(n_markers)
+            marker_effects = np.random.randn(self.n_markers)
         if recombination_vec is None:
-            recombination_vec = np.random.uniform(size=n_markers)
-            recombination_vec /= n_markers / 20
+            recombination_vec = np.random.uniform(size=self.n_markers)
+            recombination_vec /= self.n_markers / 20
 
-        if len(marker_effects) != len(recombination_vec):
-            raise Exception("marker_effects and recombination_vec must have same length")
+        if len(marker_effects) != self.n_markers or \
+           len(recombination_vec) != self.n_markers:
+            raise Exception(
+                "Incompatible arguments. ",
+                f"Lenght of marker_effects is {len(marker_effects)}.",
+                f"Lenght of recombination_vec is {len(recombination_vec)}."
 
-        chromosomes = np.arange(n_markers) // (n_markers // n_chr)
+            )
+
+        chromosomes = np.arange(self.n_markers) // (self.n_markers // n_chr)
 
         data = np.vstack([chromosomes, recombination_vec, marker_effects]).T
-        genetic_map = pd.DataFrame(data, columns=["Chr", "RecombRate", "Effect"])
+        genetic_map = pd.DataFrame(
+            data, columns=["Chr", "RecombRate", "Effect"])
 
-        super().__init__(genetic_map=genetic_map)
+        super().__init__(genetic_map=genetic_map, **kwargs)
         self.recombination_vec = recombination_vec
-        
+
+    def load_population(self, n_individual=100):
+        return np.random.choice(
+            a=[False, True],
+            size=(n_individual, self.n_markers, 2),
+            p=[0.5, 0.5]
+        )
+
 
 @pytest.mark.parametrize("idx", [0, 1])
 def test_cross_r(idx):
@@ -102,6 +123,55 @@ def test_ad_hoc_cross():
             chr_idx = 1 - chr_idx
         assert child[1, mrk_idx, 0] == parent_0[chr_idx, mrk_idx]
         assert child[1, mrk_idx, 1] == parent_1[chr_idx, mrk_idx]
+
+
+def test_double_haploid():
+    n_markers = 1000
+    n_ind = 100
+
+    rec_vector = np.zeros(n_markers, dtype='bool')
+    rec_vector[0] = 1
+    simulator = MockSimulator(recombination_vec=rec_vector)
+    population = simulator.load_population(n_ind)
+
+    new_pop = simulator.double_haploid(population)
+
+    assert new_pop.shape == population.shape
+    assert np.all(new_pop[:, :, 0] == population[:, :, 1])
+    assert np.all(new_pop[:, :, 1] == population[:, :, 1])
+
+
+def test_diallel():
+    n_markers = 1000
+    n_ind = 100
+    simulator = MockSimulator(n_markers=n_markers)
+    population = simulator.load_population(n_ind)
+
+    new_pop = simulator.diallel(population)
+    assert len(new_pop) == n_ind * (n_ind - 1) // 2
+
+    new_pop = simulator.diallel(population, n_offspring=10)
+    assert len(new_pop) == n_ind * (n_ind - 1) // 2 * 10
+
+
+def test_random_crosses():
+    n_markers = 1000
+    n_ind = 100
+    simulator = MockSimulator(n_markers=n_markers)
+    population = simulator.load_population(n_ind)
+
+    n_crosses = 300
+    new_pop = simulator.random_crosses(population, n_crosses=n_crosses)
+    assert new_pop.shape == (n_crosses, n_markers, 2)
+
+    n_offspring = 10
+    new_pop = simulator.random_crosses(
+        population=population,
+        n_crosses=n_crosses,
+        n_offspring=n_offspring
+    )
+    assert new_pop.shape == (n_crosses * n_offspring, n_markers, 2)
+
 
 def test_phenotyping():
     simulator = BreedingSimulator(

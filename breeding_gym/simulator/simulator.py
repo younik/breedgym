@@ -84,10 +84,14 @@ class BreedingSimulator:
         np.savetxt(file_name, flatten_pop, fmt="%i")
 
     @partial(jax.vmap, in_axes=(None, 0))  # parallelize across individuals
-    # parallelize across parents
-    @partial(jax.vmap, in_axes=(None, 0), out_axes=1)
+    @partial(jax.vmap, in_axes=(None, 0), out_axes=1)  # parallelize parents
     def cross(self, parent: np.ndarray):
         return _cross(parent, self.recombination_vec, self.random_key)
+
+    @partial(jax.vmap, in_axes=(None, 0))  # parallelize across individuals
+    def double_haploid(self, population: np.ndarray):
+        haploid = _cross(population, self.recombination_vec, self.random_key)
+        return jnp.broadcast_to(haploid[:, None], shape=(*haploid.shape, 2))
 
     def diallel(self, population: np.ndarray, n_offspring: int = 1):
         if n_offspring < 1:
