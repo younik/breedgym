@@ -145,7 +145,7 @@ class BreedingSimulator:
 
         indices = f_index(population)
         best_pop = np.argsort(indices)[-k:]
-        return population[best_pop]
+        return population[best_pop, :, :]
 
     def GEBV(self, population: np.ndarray) -> pd.DataFrame:
         GEBV = self.GEBV_model(population)
