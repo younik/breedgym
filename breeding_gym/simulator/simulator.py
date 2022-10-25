@@ -8,13 +8,15 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 from functools import partial
+import random
 
 
 GENETIC_MAP = DATA_PATH.joinpath("genetic_map.txt")
 
 
-def _cross(parent, recombination_vec):
-    samples = np.random.rand(*recombination_vec.shape)
+@jax.jit
+def _cross(parent, recombination_vec, random_key):
+    samples = jax.random.uniform(random_key, shape=recombination_vec.shape)
     rec_sites = samples < recombination_vec
     crossover_mask = jax.lax.associative_scan(jnp.logical_xor, rec_sites)
 
@@ -35,6 +37,7 @@ class BreedingSimulator:
         genetic_map: Union[Path, pd.DataFrame] = GENETIC_MAP,
         trait_names: List["str"] = ["Yield"],
         h2: Optional[List[int]] = None,
+        seed: Optional[int] = None
     ):
         if h2 is None:
             h2 = len(trait_names) * [1]
@@ -64,6 +67,14 @@ class BreedingSimulator:
         first_mrk_map[0] = True
         self.recombination_vec[first_mrk_map] = 0.5  # first equally likely
 
+        self.random_key = None
+        if seed is None:
+            seed = random.randint(0, 2**32)
+        self.set_seed(seed)
+
+    def set_seed(self, seed: int):
+        self.random_key = jax.random.PRNGKey(seed)
+
     def load_population(self, file_name: Path):
         population = np.loadtxt(file_name, dtype='bool')
         return population.reshape(population.shape[0], self.n_markers, 2)
@@ -72,14 +83,26 @@ class BreedingSimulator:
         flatten_pop = population.reshape(population.shape[0], -1)
         np.savetxt(file_name, flatten_pop, fmt="%i")
 
-    @partial(jax.vmap, in_axes=(None, 0))  # parallelize across individuals
-    @partial(jax.vmap, in_axes=(None, 0), out_axes=1)  # parallelize parents
-    def cross(self, parent: np.ndarray):
-        return _cross(parent, self.recombination_vec)
+    def cross(self, parents: np.ndarray):
+        keys = jax.random.split(self.random_key, num=len(parents) * 2 + 1)
+        self.random_key = keys[0]
+        split_keys = keys[1:].reshape(len(parents), 2, 2)
+        return self._vmap_cross(parents, split_keys)
 
-    @partial(jax.vmap, in_axes=(None, 0))  # parallelize across individuals
+    @partial(jax.vmap, in_axes=(None, 0, 0))  # parallelize across individuals
+    @partial(jax.vmap, in_axes=(None, 0, 0), out_axes=1)  # parallelize parents
+    def _vmap_cross(self, parent: np.ndarray, random_key: jax.random.PRNGKey):
+        return _cross(parent, self.recombination_vec, random_key)
+
     def double_haploid(self, population: np.ndarray):
-        haploid = _cross(population, self.recombination_vec)
+        keys = jax.random.split(self.random_key, num=len(population) + 1)
+        self.random_key = keys[0]
+        split_keys = keys[1:]
+        return self._vmap_dh(population, split_keys)
+
+    @partial(jax.vmap, in_axes=(None, 0, 0))  # parallelize across individuals
+    def _vmap_dh(self, population: np.ndarray, random_key: jax.random.PRNGKey):
+        haploid = _cross(population, self.recombination_vec, random_key)
         return jnp.broadcast_to(haploid[:, None], shape=(*haploid.shape, 2))
 
     def diallel(self, population: np.ndarray, n_offspring: int = 1):
@@ -141,7 +164,7 @@ class BreedingSimulator:
         return pd.DataFrame(GEBV, columns=self.trait_names)
 
     def phenotype(self, population: np.ndarray):
-        noise = np.random.randn(len(self.h2))
+        noise = jax.random.normal(self.random_key, shape=(len(self.h2),))
         env_effect = (1 - self.h2) * (self.var_gebv * noise + self.mean_gebv)
         return self.h2 * self.GEBV(population) + env_effect
 

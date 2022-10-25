@@ -131,11 +131,10 @@ def test_cross_two_times():
     simulator = MockSimulator(n_markers=n_markers)
     population = simulator.load_population(n_ind)
 
-    parents = population[np.array([[0, 1]])]
-    child1 = simulator.cross(parents)
-    child2 = simulator.cross(parents)
+    parents = population[np.array([[0, 1], [0, 1]])]
+    children = simulator.cross(parents)
 
-    assert np.any(child1 != child2)
+    assert np.any(children[0] != children[1])
 
 
 def test_double_haploid():
