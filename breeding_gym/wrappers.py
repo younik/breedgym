@@ -61,7 +61,7 @@ class SimplifiedBreedingGym(gym.Wrapper):
                 "n_crosses must be lower or equal to individual_per_gen"
             )
 
-        self.env.population = self.simulator.select(
+        self.unwrapped.population = self.simulator.select(
             population=self.env.population,
             k=n_bests,
             f_index=self.f_index

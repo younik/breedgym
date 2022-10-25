@@ -125,6 +125,19 @@ def test_ad_hoc_cross():
         assert child[1, mrk_idx, 1] == parent_1[chr_idx, mrk_idx]
 
 
+def test_cross_two_times():
+    n_markers = 100_000
+    n_ind = 2
+    simulator = MockSimulator(n_markers=n_markers)
+    population = simulator.load_population(n_ind)
+
+    parents = population[np.array([[0, 1]])]
+    child1 = simulator.cross(parents)
+    child2 = simulator.cross(parents)
+
+    assert np.any(child1 != child2)
+
+
 def test_double_haploid():
     n_markers = 1000
     n_ind = 100
