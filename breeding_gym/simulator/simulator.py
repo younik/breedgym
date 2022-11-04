@@ -46,13 +46,13 @@ class BreedingSimulator:
         self.trait_names = trait_names
 
         if not isinstance(genetic_map, pd.DataFrame):
-            types = {'Chr': 'int32',
-                     'RecombRate': 'float32', "Effect": 'float32'}
+            types = {name: 'float32' for name in trait_names}
+            types['RecombRate'] = 'float32'
             genetic_map = pd.read_table(genetic_map, sep="\t", dtype=types)
 
-        mrk_effects = genetic_map["Effect"]
+        mrk_effects = genetic_map[trait_names]
         self.GEBV_model = GEBVModel(
-            marker_effects=mrk_effects.to_numpy()[:, None]
+            marker_effects=mrk_effects.to_numpy()
         )
 
         self.n_markers = len(genetic_map)
@@ -61,9 +61,9 @@ class BreedingSimulator:
         # change semantic to "recombine now" instead of "recombine after"
         self.recombination_vec[1:] = self.recombination_vec[:-1]
 
-        chr_map = genetic_map['Chr']
+        chr_map = genetic_map['CHR.PHYS']
         first_mrk_map = np.zeros(len(chr_map), dtype='bool')
-        first_mrk_map[1:] = chr_map[1:].values != chr_map[:-1].values
+        first_mrk_map[1:] = chr_map.iloc[1:].values != chr_map.iloc[:-1].values
         first_mrk_map[0] = True
         self.recombination_vec[first_mrk_map] = 0.5  # first equally likely
 

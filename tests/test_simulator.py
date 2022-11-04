@@ -46,7 +46,7 @@ class MockSimulator(BreedingSimulator):
 
         data = np.vstack([chromosomes, recombination_vec, marker_effects]).T
         genetic_map = pd.DataFrame(
-            data, columns=["Chr", "RecombRate", "Effect"])
+            data, columns=["CHR.PHYS", "RecombRate", "Yield"])
 
         super().__init__(genetic_map=genetic_map, **kwargs)
         self.recombination_vec = recombination_vec
@@ -198,3 +198,24 @@ def test_phenotyping():
 
     simulator.h2 = np.array([1])
     assert np.all(simulator.phenotype(pop) == simulator.GEBV(pop))
+
+
+def test_multi_trait():
+    trait_names = [
+        "Abs_Yield",
+        "Plant_height",
+        "Heading_date",
+        "Zeleny",
+        "TKW",
+        "Falling_Number"
+    ]
+    simulator = BreedingSimulator(
+        genetic_map=DATA_PATH.joinpath("multi_trait", "genetic_map.txt"),
+        trait_names=trait_names
+    )
+    population = simulator.load_population(
+        DATA_PATH.joinpath("multi_trait", "geno.txt")
+    )
+
+    gebv_shape = len(population), len(trait_names)
+    assert simulator.GEBV(population).shape == gebv_shape
