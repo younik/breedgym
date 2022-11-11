@@ -109,17 +109,17 @@ class BreedingSimulator:
         if n_offspring < 1:
             raise ValueError("n_offspring must be higher or equal to 1")
 
-        diallel_indices = self._diallel_indices(len(population))
+        all_indices = np.arange(len(population))
+        diallel_indices = self._diallel_indices(all_indices)
         cross_indices = np.repeat(diallel_indices, n_offspring, axis=0)
         return self.cross(population[cross_indices])
 
-    def _diallel_indices(self, length):
-        arange = np.arange(length)
-        mesh1, mesh2 = np.meshgrid(arange, arange)
-        triu_indices = np.triu_indices(length, k=1)
+    def _diallel_indices(self, indices):
+        mesh1, mesh2 = jnp.meshgrid(indices, indices)
+        triu_indices = jnp.triu_indices(len(indices), k=1)
         mesh1 = mesh1[triu_indices]
         mesh2 = mesh2[triu_indices]
-        return np.stack([mesh1, mesh2], axis=1)
+        return jnp.stack([mesh1, mesh2], axis=1)
 
     def random_crosses(
         self,
@@ -132,7 +132,8 @@ class BreedingSimulator:
         if n_offspring < 1:
             raise ValueError("n_offspring must be higher or equal to 1")
 
-        diallel_indices = self._diallel_indices(len(population))
+        all_indices = np.arange(len(population))
+        diallel_indices = self._diallel_indices(all_indices)
         random_select_idx = np.random.choice(
             len(diallel_indices), n_crosses, replace=False
         )
@@ -147,16 +148,11 @@ class BreedingSimulator:
         k: int,
         f_index: Callable[[np.ndarray], int] = None
     ):
-        if k <= 0:
-            raise ValueError("k must be a strict positive number")
-        if k > len(population):
-            raise ValueError(
-                "k must be lower or equal to the number of individual")
         if f_index is None:
             f_index = yield_index(self.GEBV_model)
 
         indices = f_index(population)
-        best_pop = np.argsort(indices)[-k:]
+        _, best_pop = jax.lax.top_k(indices, k)
         return population[best_pop, :, :]
 
     def GEBV(self, population: np.ndarray) -> pd.DataFrame:

@@ -93,36 +93,24 @@ def test_equal_parents():
 
 
 def test_ad_hoc_cross():
-    parent_0 = np.array([
-        [0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0],
-        [1, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1]
-    ], dtype='bool')
-    parent_1 = np.array([
-        [0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0],
-        [0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0]
-    ], dtype='bool')
-    assert parent_0.shape == parent_1.shape
-
     rec_vec = np.array(
         [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
         dtype=np.int8
     )
-    assert len(rec_vec) == parent_1.shape[1]
-    simulator = MockSimulator(recombination_vec=rec_vec)
 
-    parents = np.empty((1, 2, *parent_0.T.shape), dtype='bool')
-    parents[0, 0] = parent_0.T
-    parents[0, 1] = parent_1.T
+    simulator = MockSimulator(recombination_vec=rec_vec)
+    population = simulator.load_population(2)
+    parents = population[np.array([[0, 1]])]
     child = simulator.cross(parents)
 
-    assert child.shape == (1, *parent_0.T.shape)
+    assert child.shape == (1, *population[0].shape)
 
     chr_idx = 0
     for mrk_idx, rec_prob in enumerate(rec_vec):
         if rec_prob == 1:
             chr_idx = 1 - chr_idx
-        assert child[1, mrk_idx, 0] == parent_0[chr_idx, mrk_idx]
-        assert child[1, mrk_idx, 1] == parent_1[chr_idx, mrk_idx]
+        assert child[1, mrk_idx, 0] == population[0, mrk_idx, chr_idx]
+        assert child[1, mrk_idx, 1] == population[1, mrk_idx, chr_idx]
 
 
 def test_cross_two_times():

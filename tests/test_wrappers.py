@@ -1,6 +1,5 @@
 import gym
 from breeding_gym.utils.paths import DATA_PATH
-from breeding_gym.wrappers import ObserveStepWrapper
 import pytest
 import numpy as np
 
@@ -71,21 +70,3 @@ def test_kbest_env():
 
     with pytest.raises(Exception):
         env.step(21)
-
-
-def test_observe_wrapper():
-    env = gym.make("SimplifiedBreedingGym",
-                   individual_per_gen=200,
-                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
-                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
-                   )
-    env = ObserveStepWrapper(env)
-
-    obs, _ = env.reset()
-    assert obs == 0
-
-    obs, _, _, _, _ = env.step({"n_bests": 10, "n_crosses": 20})
-    assert obs == 1
-
-    obs, _ = env.reset()
-    assert obs == 0

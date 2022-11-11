@@ -3,7 +3,7 @@ import numpy as np
 
 def yield_index(GEBV_model):
     def yield_index_f(pop):
-        return GEBV_model(pop)[:, 0]
+        return GEBV_model(pop)[..., 0]
 
     return yield_index_f
 
