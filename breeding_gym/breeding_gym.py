@@ -11,7 +11,6 @@ import matplotlib.patches as mpatches
 
 class BreedingGym(gym.Env):
 
-    MAX_INDIVIDUALS = np.iinfo(np.int64).max
     MAX_EPISODE_STEPS = 10
 
     metadata = {"render_modes": ["matplotlib"], "render_fps": 1}
@@ -28,13 +27,13 @@ class BreedingGym(gym.Env):
         self.germplasm = self.simulator.load_population(initial_population)
         self.reward_shaping = reward_shaping
 
-        self.observation_space = spaces.Sequence(
-            spaces.Box(0, 1, shape=(self.germplasm.shape[1], 2))
+        self.observation_space = spaces.Box(
+            0, 1, shape=self.germplasm.shape, dtype=np.bool_
         )
         self.action_space = spaces.Sequence(
             spaces.Tuple((
-                spaces.Discrete(self.MAX_INDIVIDUALS),
-                spaces.Discrete(self.MAX_INDIVIDUALS)
+                spaces.Discrete(len(self.germplasm)),
+                spaces.Discrete(len(self.germplasm))
             ))
         )
 
@@ -71,6 +70,17 @@ class BreedingGym(gym.Env):
             axs = plt.subplots(nrows, ncols, figsize=(4*ncols, 4*nrows))[1]
             return axs.flatten()
 
+    def _update_spaces(self):
+        self.observation_space = spaces.Box(
+            0, 1, shape=self.population.shape, dtype=np.bool_
+        )
+        self.action_space = spaces.Sequence(
+            spaces.Tuple((
+                spaces.Discrete(len(self.population)),
+                spaces.Discrete(len(self.population))
+            ))
+        )
+
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
@@ -86,6 +96,7 @@ class BreedingGym(gym.Env):
         else:
             self.population = self.germplasm
 
+        self._update_spaces()
         info = self._get_info()
         if self.render_mode is not None:
             self._render_step(info)
@@ -99,6 +110,7 @@ class BreedingGym(gym.Env):
         parents = self.population[action]  # n x 2 x markers x 2
         self.population = self.simulator.cross(parents)
         self.step_idx += 1
+        self._update_spaces()
 
         info = self._get_info()
         if self.render_mode is not None:
