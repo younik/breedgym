@@ -10,13 +10,13 @@ install_requires = [
 
 
 setuptools.setup(
-    name='breedinggym',
+    name='breeding_gym',
     version='0.1.0',
-    description='Open AI gym interface to the cycles crop simulator',
+    description='Gym environment for breeding simulation',
     url='https://gitlab.inf.ethz.ch/lucac/breedinggym',
     author='Omar Younis, Luca Corinzia, Matteo Turchetta',
-    author_email='luca.corinzia@inf.ethz.ch',
-    keywords='Crop breeding simulator',
+    author_email='omargallalaly.younis@inf.ethz.ch',
+    keywords='Plant breeding simulator',
     packages=setuptools.find_packages(),
     python_requires=">=3.8",
     include_package_data=True,
