@@ -1,5 +1,12 @@
 import numpy as np
 import jax.numpy as jnp
+from jax import jit
+
+
+@jit
+def _gebv(population, marker_effects):
+    monoploidy = population.sum(axis=-1, dtype=jnp.int8)
+    return jnp.dot(monoploidy, marker_effects)
 
 
 class GEBVModel:
@@ -9,6 +16,7 @@ class GEBVModel:
         marker_effects: jnp.ndarray,
     ) -> None:
         self.marker_effects = marker_effects
+        self.n_traits = marker_effects.shape[1]
 
         self.positive_mask = self.marker_effects > 0
 
@@ -19,16 +27,14 @@ class GEBVModel:
         self.var = (self.marker_effects**2).mean(axis=0) / 2
 
     def __call__(self, population: jnp.ndarray) -> jnp.ndarray:
-        monoploidy = population.sum(axis=-1, dtype=jnp.int8)
-        dot = jnp.dot(monoploidy, self.marker_effects)
-        return dot
+        return _gebv(population, self.marker_effects)
 
     def optimal_haploid_value(self, population):
+        if self.n_traits != 1:
+            raise ValueError("OHV works only with single trait")
         positive_mask = self.positive_mask.squeeze()
 
-        optimal_haploid_pop = np.empty(
-            (population.shape[0], population.shape[1]), dtype='bool'
-        )
+        optimal_haploid_pop = np.empty(population.shape[:-1], dtype='bool')
 
         optimal_haploid_pop[:, positive_mask] = np.any(
             population[:, positive_mask],
@@ -39,4 +45,4 @@ class GEBVModel:
             axis=-1
         )
 
-        return 2 * self(optimal_haploid_pop[:, :, None])
+        return 2 * self(optimal_haploid_pop[..., None])
