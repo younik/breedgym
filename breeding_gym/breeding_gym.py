@@ -205,7 +205,7 @@ class BreedingGym(gym.Env):
     @property
     def norm_GEBV(self):
         norm_GEBV = self.GEBV - self.simulator.mean_gebv
-        norm_GEBV /= self.simulator.max_gebv - self.simulator.min_gebv
+        norm_GEBV /= np.sqrt(self.simulator.var_gebv)
         return norm_GEBV
 
     @property
