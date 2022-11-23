@@ -1,9 +1,9 @@
 import numpy as np
 import jax.numpy as jnp
-from jax import jit
+import jax
 
 
-@jit
+@jax.jit
 def _gebv(population, marker_effects):
     monoploidy = population.sum(axis=-1, dtype=jnp.int8)
     return jnp.dot(monoploidy, marker_effects)
@@ -14,8 +14,13 @@ class GEBVModel:
     def __init__(
         self,
         marker_effects: jnp.ndarray,
+        device=None
     ) -> None:
-        self.marker_effects = marker_effects
+        self.device = device
+        self.marker_effects = jax.device_put(
+            marker_effects,
+            device=self.device
+        )
         self.n_traits = marker_effects.shape[1]
 
         self.positive_mask = self.marker_effects > 0

@@ -60,22 +60,6 @@ def test_caching():
     assert id(GEBV) != id(GEBV3)
 
 
-def test_reward():
-    env = gym.make("BreedingGym",
-                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
-                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
-                   reward_shaping=True
-                   )
-
-    pop, _ = env.reset()
-
-    for _ in range(9):
-        action = np.asarray(env.action_space.sample()) % len(pop)
-        pop, reward, _, _, _ = env.step(action)
-
-        assert reward >= -1 and reward <= 1
-
-
 def test_reward_shaping():
     env = gym.make("BreedingGym",
                    initial_population=DATA_PATH.joinpath("small_geno.txt"),

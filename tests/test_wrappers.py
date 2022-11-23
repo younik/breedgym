@@ -15,7 +15,6 @@ def test_simplified_env():
     obs, _ = env.reset()
     assert len(obs["GEBV"]) == individual_per_gen
     assert len(obs["corrcoef"]) == individual_per_gen
-    assert np.all(obs["GEBV"] >= -1) and np.all(obs["GEBV"] <= 1)
     assert np.all(obs["corrcoef"] >= -1) and np.all(obs["corrcoef"] <= 1)
 
     actions = [
@@ -28,7 +27,6 @@ def test_simplified_env():
         obs, _, _, _, _ = env.step(action)
         assert len(obs["GEBV"]) == individual_per_gen
         assert len(obs["corrcoef"]) == individual_per_gen
-        assert np.all(obs["GEBV"] >= -1) and np.all(obs["GEBV"] <= 1)
         assert np.all(obs["corrcoef"] >= -1) and np.all(obs["corrcoef"] <= 1)
 
     with pytest.raises(Exception):
@@ -54,7 +52,6 @@ def test_kbest_env():
     obs, _ = env.reset()
     assert len(obs["GEBV"]) == individual_per_gen
     assert len(obs["corrcoef"]) == individual_per_gen
-    assert np.all(obs["GEBV"] >= -1) and np.all(obs["GEBV"] <= 1)
     assert np.all(obs["corrcoef"] >= -1) and np.all(obs["corrcoef"] <= 1)
 
     actions = [10, 2, 20]
@@ -62,7 +59,6 @@ def test_kbest_env():
         obs, _, _, _, _ = env.step(action)
         assert len(obs["GEBV"]) == individual_per_gen
         assert len(obs["corrcoef"]) == individual_per_gen
-        assert np.all(obs["GEBV"] >= -1) and np.all(obs["GEBV"] <= 1)
         assert np.all(obs["corrcoef"] >= -1) and np.all(obs["corrcoef"] <= 1)
 
     with pytest.raises(Exception):

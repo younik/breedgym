@@ -3,6 +3,8 @@ import pytest
 import numpy as np
 from breeding_gym.utils.paths import DATA_PATH
 import pandas as pd
+import jax
+import warnings
 
 
 class MockSimulator(BreedingSimulator):
@@ -207,3 +209,41 @@ def test_multi_trait():
 
     gebv_shape = len(population), len(trait_names)
     assert simulator.GEBV(population).shape == gebv_shape
+
+
+def test_device():
+    local_devices = jax.local_devices()
+    if len(local_devices) == 1:
+        warnings.warn(
+            "Device testing skipped because there is only one device."
+        )
+        return
+
+    device = local_devices[1]
+    simulator = BreedingSimulator(
+        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+        device=device
+    )
+
+    population = simulator.load_population(
+        DATA_PATH.joinpath('small_geno.txt')
+    )
+    assert population.device_buffer.device() == device
+
+    GEBV = simulator.GEBV_model(population)
+    assert GEBV.device_buffer.device() == device
+
+    selected_pop = simulator.select(population, k=10)
+    assert selected_pop.device_buffer.device() == device
+
+    diallel = simulator.diallel(selected_pop, n_offspring=10)
+    assert diallel.device_buffer.device() == device
+
+    dh_pop = simulator.double_haploid(diallel)
+    assert dh_pop.device_buffer.device() == device
+
+    cross_indices = np.array([
+        [1, 5], [3, 10], [100, 2], [7, 93], [28, 41]
+    ])
+    new_pop = simulator.cross(dh_pop[cross_indices])
+    assert new_pop.device_buffer.device() == device

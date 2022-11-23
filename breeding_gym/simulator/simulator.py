@@ -37,13 +37,15 @@ class BreedingSimulator:
         genetic_map: Union[Path, pd.DataFrame] = GENETIC_MAP,
         trait_names: List["str"] = ["Yield"],
         h2: Optional[List[int]] = None,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
+        device=None
     ):
         if h2 is None:
             h2 = len(trait_names) * [1]
         assert len(h2) == len(trait_names)
         self.h2 = jnp.array(h2)
         self.trait_names = trait_names
+        self.device = device
 
         if not isinstance(genetic_map, pd.DataFrame):
             types = {name: 'float32' for name in trait_names}
@@ -52,20 +54,25 @@ class BreedingSimulator:
 
         mrk_effects = genetic_map[trait_names]
         self.GEBV_model = GEBVModel(
-            marker_effects=mrk_effects.to_numpy()
+            marker_effects=mrk_effects.to_numpy(),
+            device=self.device
         )
 
         self.n_markers = len(genetic_map)
-        self.recombination_vec = genetic_map["RecombRate"].to_numpy()
+        recombination_vec = genetic_map["RecombRate"].to_numpy()
 
         # change semantic to "recombine now" instead of "recombine after"
-        self.recombination_vec[1:] = self.recombination_vec[:-1]
+        recombination_vec[1:] = recombination_vec[:-1]
 
         chr_map = genetic_map['CHR.PHYS']
         first_mrk_map = np.zeros(len(chr_map), dtype='bool')
         first_mrk_map[1:] = chr_map.iloc[1:].values != chr_map.iloc[:-1].values
         first_mrk_map[0] = True
-        self.recombination_vec[first_mrk_map] = 0.5  # first equally likely
+        recombination_vec[first_mrk_map] = 0.5  # first equally likely
+        self.recombination_vec = jax.device_put(
+            recombination_vec,
+            device=self.device
+        )
 
         self.random_key = None
         if seed is None:
@@ -77,7 +84,8 @@ class BreedingSimulator:
 
     def load_population(self, file_name: Path):
         population = np.loadtxt(file_name, dtype='bool')
-        return population.reshape(population.shape[0], self.n_markers, 2)
+        population = population.reshape(population.shape[0], self.n_markers, 2)
+        return jax.device_put(population, device=self.device)
 
     def save_population(self, population: np.ndarray, file_name: Path):
         flatten_pop = population.reshape(population.shape[0], -1)
