@@ -9,25 +9,10 @@ import jax
 import jax.numpy as jnp
 from functools import partial
 import random
+import logging
 
 
 GENETIC_MAP = DATA_PATH.joinpath("genetic_map.txt")
-
-
-@jax.jit
-def _cross(parent, recombination_vec, random_key):
-    samples = jax.random.uniform(random_key, shape=recombination_vec.shape)
-    rec_sites = samples < recombination_vec
-    crossover_mask = jax.lax.associative_scan(jnp.logical_xor, rec_sites)
-
-    crossover_mask = crossover_mask.astype(jnp.int8)
-    progenies = jnp.take_along_axis(
-        parent,
-        crossover_mask[:, None],
-        axis=-1
-    )
-
-    return progenies.squeeze()
 
 
 class BreedingSimulator:
@@ -38,13 +23,30 @@ class BreedingSimulator:
         trait_names: List["str"] = ["Yield"],
         h2: Optional[List[int]] = None,
         seed: Optional[int] = None,
-        device=None
+        device=None,
+        backend=None
     ):
         if h2 is None:
             h2 = len(trait_names) * [1]
         assert len(h2) == len(trait_names)
         self.h2 = jnp.array(h2)
         self.trait_names = trait_names
+
+        if device is None:  # use the right backend
+            device = jax.local_devices(backend=backend)[0]
+        elif isinstance(device, int):
+            local_devices = jax.local_devices(backend=backend)
+            matched_devices = filter(lambda d: d.id == device, local_devices)
+            matched_devices = list(matched_devices)
+            assert len(matched_devices) <= 1
+            if len(matched_devices) == 0:
+                print(jax.devices(), flush=True)
+                logging.warn(
+                    f"No device with id:{device}. Using the default one."
+                )
+                device = jax.local_devices(backend=backend)[0]
+            else:
+                device = matched_devices[0]
         self.device = device
 
         if not isinstance(genetic_map, pd.DataFrame):
@@ -82,7 +84,7 @@ class BreedingSimulator:
     def set_seed(self, seed: int):
         self.random_key = jax.random.PRNGKey(seed)
 
-    def load_population(self, file_name: Path):
+    def load_population(self, file_name: Path | str):
         population = np.loadtxt(file_name, dtype='bool')
         population = population.reshape(population.shape[0], self.n_markers, 2)
         return jax.device_put(population, device=self.device)
@@ -95,22 +97,55 @@ class BreedingSimulator:
         keys = jax.random.split(self.random_key, num=len(parents) * 2 + 1)
         self.random_key = keys[0]
         split_keys = keys[1:].reshape(len(parents), 2, 2)
-        return self._vmap_cross(parents, split_keys)
+        return BreedingSimulator._cross(
+            parents,
+            self.recombination_vec,
+            split_keys
+        )
 
-    @partial(jax.vmap, in_axes=(None, 0, 0))  # parallelize across individuals
-    @partial(jax.vmap, in_axes=(None, 0, 0), out_axes=1)  # parallelize parents
-    def _vmap_cross(self, parent: np.ndarray, random_key: jax.random.PRNGKey):
-        return _cross(parent, self.recombination_vec, random_key)
+    @jax.jit
+    @partial(jax.vmap, in_axes=(0, None, 0))  # parallelize across individuals
+    @partial(jax.vmap, in_axes=(0, None, 0), out_axes=1)  # parallelize parents
+    def _cross(parent, recombination_vec, random_key):
+        return BreedingSimulator._cross_individual(
+            parent,
+            recombination_vec,
+            random_key
+        )
+
+    @jax.jit
+    def _cross_individual(parent, recombination_vec, random_key):
+        samples = jax.random.uniform(random_key, shape=recombination_vec.shape)
+        rec_sites = samples < recombination_vec
+        crossover_mask = jax.lax.associative_scan(jnp.logical_xor, rec_sites)
+
+        crossover_mask = crossover_mask.astype(jnp.int8)
+        progenies = jnp.take_along_axis(
+            parent,
+            crossover_mask[:, None],
+            axis=-1
+        )
+
+        return progenies.squeeze()
 
     def double_haploid(self, population: np.ndarray):
         keys = jax.random.split(self.random_key, num=len(population) + 1)
         self.random_key = keys[0]
         split_keys = keys[1:]
-        return self._vmap_dh(population, split_keys)
+        return BreedingSimulator._vmap_dh(
+            population,
+            self.recombination_vec,
+            split_keys
+        )
 
-    @partial(jax.vmap, in_axes=(None, 0, 0))  # parallelize across individuals
-    def _vmap_dh(self, population: np.ndarray, random_key: jax.random.PRNGKey):
-        haploid = _cross(population, self.recombination_vec, random_key)
+    @jax.jit
+    @partial(jax.vmap, in_axes=(0, None, 0))  # parallelize across individuals
+    def _vmap_dh(population, recombination_vec, random_key):
+        haploid = BreedingSimulator._cross_individual(
+            population,
+            recombination_vec,
+            random_key
+        )
         return jnp.broadcast_to(haploid[:, None], shape=(*haploid.shape, 2))
 
     def diallel(self, population: np.ndarray, n_offspring: int = 1):
