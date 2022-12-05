@@ -2,6 +2,8 @@ from math import sqrt, ceil, floor
 import gym
 from gym import spaces
 import numpy as np
+import jax
+from pathlib import Path
 from breeding_gym.simulator import BreedingSimulator
 from breeding_gym.utils.paths import DATA_PATH
 from breeding_gym.utils.plot_utils import set_up_plt, NEURIPS_FONT_FAMILY
@@ -24,7 +26,13 @@ class BreedingGym(gym.Env):
         **kwargs
     ):
         self.simulator = BreedingSimulator(**kwargs)
-        self.germplasm = self.simulator.load_population(initial_population)
+        if isinstance(initial_population, (str, Path)):
+            germplasm = self.simulator.load_population(initial_population)
+        else:
+            germplasm = initial_population
+        self.device = self.simulator.device
+        self.germplasm = jax.device_put(germplasm, device=self.device)
+
         self.reward_shaping = reward_shaping
 
         self.observation_space = spaces.Box(
