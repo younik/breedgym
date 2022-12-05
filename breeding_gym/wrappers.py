@@ -4,6 +4,8 @@ from breeding_gym.utils.index_functions import yield_index
 import gym
 from gym import spaces
 import numpy as np
+import jax
+import jax.numpy as jnp
 
 
 class SimplifiedBreedingGym(gym.Wrapper):
@@ -80,13 +82,21 @@ class SimplifiedBreedingGym(gym.Wrapper):
         obs = self._simplified_obs()
         return obs, rew, terminated, truncated, info
 
+    @jax.jit
+    def _correlation(population):
+        monoploidy = jnp.sum(population, axis=-1) - 1
+        mean_ind = jnp.mean(monoploidy, axis=0)
+        norms = jnp.linalg.norm(monoploidy, axis=-1)
+        norms *= jnp.linalg.norm(mean_ind, axis=-1)
+        return jnp.dot(monoploidy, mean_ind) / norms
+
     def _simplified_obs(self):
-        norm_corrcoef = self.corrcoef * 2 - 1
+        norm_corr = SimplifiedBreedingGym._correlation(self.population)
         norm_yield = self.norm_GEBV["Yield"].to_numpy()
         order = np.argsort(norm_yield)
         return {
             "GEBV": norm_yield[order],
-            "corrcoef": norm_corrcoef[order]
+            "corrcoef": norm_corr[order]
         }
 
 
