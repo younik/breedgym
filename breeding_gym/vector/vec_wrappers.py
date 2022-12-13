@@ -11,8 +11,8 @@ class VecWrapper(VectorEnv):
         self.vec_env = vec_env
         super().__init__(
             self.vec_env.n_envs,
-            self.vec_env.observation_space,
-            self.vec_env.action_space
+            self.vec_env.single_observation_space,
+            self.vec_env.single_action_space
         )
 
     def reset(self):
