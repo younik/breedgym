@@ -92,11 +92,10 @@ class SimplifiedBreedingGym(gym.Wrapper):
 
     def _simplified_obs(self):
         norm_corr = SimplifiedBreedingGym._correlation(self.population)
-        norm_yield = self.norm_GEBV["Yield"].to_numpy()
-        order = np.argsort(norm_yield)
+        norm_yield = self.GEBV["Yield"].to_numpy()
         return {
-            "GEBV": norm_yield[order],
-            "corrcoef": norm_corr[order]
+            "GEBV": norm_yield,
+            "corrcoef": norm_corr
         }
 
 
