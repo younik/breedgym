@@ -126,7 +126,7 @@ class BreedingGym(gym.Env):
 
         truncated = self.step_idx == self.MAX_EPISODE_STEPS
         if self.reward_shaping or truncated:
-            reward = np.mean(self.norm_GEBV.to_numpy())
+            reward = np.mean(self.GEBV.to_numpy())
         else:
             reward = 0
 
@@ -209,12 +209,6 @@ class BreedingGym(gym.Env):
             self._GEBV = self.simulator.GEBV(self.population)
             self._GEBV_cache = True
         return self._GEBV
-
-    @property
-    def norm_GEBV(self):
-        norm_GEBV = self.GEBV - self.simulator.mean_gebv
-        norm_GEBV /= np.sqrt(self.simulator.var_gebv)
-        return norm_GEBV
 
     @property
     def corrcoef(self):
