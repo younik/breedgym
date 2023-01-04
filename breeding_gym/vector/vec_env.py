@@ -83,20 +83,18 @@ class VecBreedingGym(VectorEnv):
 
         done = self.step_idx == self.MAX_EPISODE_STEPS
         if done:
-            GEBVs = self.simulator.GEBV_model(self.populations)
-            infos = [{"GEBV": GEBVs[i]} for i in range(self.n_envs)]
-            rews = np.mean(GEBVs, axis=(1, 2))
+            infos = self._get_info()
+            rews = np.mean(infos["GEBV"], axis=(1, 2))
             rews = np.asarray(rews)
             if self.autoreset:
                 self.reset()
         else:
+            infos = {}
             rews = np.zeros(self.n_envs)
-            infos = self._get_info()
 
-        obs = np.asarray(self.populations)
         terminated = np.full(self.n_envs, False)
         truncated = np.full(self.n_envs, done)
-        return obs, rews, terminated, truncated, infos
+        return self.populations, rews, terminated, truncated, infos
 
     def reset(self, seed=None, options=None):
         self.step_idx = 0
