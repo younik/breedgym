@@ -71,7 +71,7 @@ class SimplifiedBreedingGym(gym.Wrapper):
 
         best_idx = np.arange(n_bests)
         diallel_indices = self.simulator._diallel_indices(best_idx)
-        random_select_idx = np.random.choice(
+        random_select_idx = self.np_random.choice(
             len(diallel_indices), n_crosses, replace=False
         )
         low_level_action = diallel_indices[random_select_idx]

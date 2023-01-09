@@ -45,7 +45,7 @@ def test_selection_vec():
         genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
         individual_per_gen=individual_per_gen
     )
-    env = SelectionValues(env)
+    env = SelectionValues(env, k=10)
 
     pop, _ = env.reset()
     expected_shape = (n_envs, individual_per_gen, env.simulator.n_markers, 2)
@@ -107,3 +107,44 @@ def test_distributed_env():
         assert info.shape == (individual_per_gen, 1)
 
     env.close()
+
+
+def test_vec_deterministic():
+    n_envs = 4
+    individual_per_gen = 200
+    env = VecBreedingGym(
+        n_envs=n_envs,
+        initial_population=DATA_PATH.joinpath("small_geno.txt"),
+        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+        individual_per_gen=individual_per_gen
+    )
+
+    np.random.seed(seed=7)
+    pop, _ = env.reset(seed=7)
+    for _ in range(10):
+        action = np.random.randint(
+            len(pop), size=(n_envs, individual_per_gen, 2)
+        )
+        pop, rews, _, _, _ = env.step(action)
+
+    expected_result = np.array([-538.9117, 555.6274, 1343.117, -1507.5759])
+    assert np.allclose(rews, expected_result)
+
+
+def test_vec_gebv_policy():
+    n_envs = 4
+    individual_per_gen = 200
+    env = VecBreedingGym(
+        n_envs=n_envs,
+        initial_population=DATA_PATH.joinpath("small_geno.txt"),
+        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+        individual_per_gen=individual_per_gen
+    )
+    env = SelectionValues(env, k=10)
+
+    _, infos = env.reset(seed=7)
+    for _ in range(10):
+        _, rews, _, _, infos = env.step(infos["GEBV"].squeeze())
+
+    expected_result = np.array([8415.941, 8940.3545, 8103.2036, 9027.615])
+    assert np.allclose(rews, expected_result)

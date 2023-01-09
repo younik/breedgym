@@ -247,3 +247,18 @@ def test_device():
     ])
     new_pop = simulator.cross(dh_pop[cross_indices])
     assert new_pop.device_buffer.device() == device
+
+
+def test_seed_deterministic():
+    n_markers = 10000
+    n_ind = 100
+    mock_simulator = MockSimulator(n_markers=n_markers)
+    population = mock_simulator.load_population(n_ind)
+
+    genetic_map = DATA_PATH.joinpath("small_genetic_map.txt")
+    simulator = BreedingSimulator(genetic_map=genetic_map, seed=7)
+    new_pop1 = simulator.random_crosses(population, n_crosses=10)
+    simulator = BreedingSimulator(genetic_map=genetic_map, seed=7)
+    new_pop2 = simulator.random_crosses(population, n_crosses=10)
+
+    assert np.all(new_pop1 == new_pop2)

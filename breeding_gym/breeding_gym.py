@@ -91,11 +91,13 @@ class BreedingGym(gym.Env):
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
+        if seed is not None:
+            self.simulator.set_seed(seed=seed)
 
         self.step_idx = 0
         self.episode_idx += 1
         if options is not None and "n_individuals" in options.keys():
-            selected_indices = np.random.choice(
+            selected_indices = self.np_random.choice(
                 len(self.germplasm),
                 options["n_individuals"],
                 replace=False

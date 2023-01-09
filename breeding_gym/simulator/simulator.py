@@ -200,8 +200,15 @@ class BreedingSimulator:
 
         all_indices = np.arange(len(population))
         diallel_indices = self._diallel_indices(all_indices)
-        random_select_idx = np.random.choice(
-            len(diallel_indices), n_crosses, replace=False
+        if n_crosses > len(diallel_indices):
+            raise ValueError("n_crosses can be at most the diallel length")
+
+        self.random_key, split_key = jax.random.split(self.random_key)
+        random_select_idx = jax.random.choice(
+            split_key,
+            len(diallel_indices),
+            shape=(n_crosses,),
+            replace=False
         )
         cross_indices = diallel_indices[random_select_idx]
 

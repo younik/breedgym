@@ -64,8 +64,7 @@ class VecBreedingGym(VectorEnv):
 
         self.populations = None
         self.step_idx = None
-        self.reset_infos = [{}]
-        self.random_key = None
+        self.reset_infos = {}
         self._actions = None
 
     @partial(jax.vmap, in_axes=(None, 0))
@@ -81,11 +80,10 @@ class VecBreedingGym(VectorEnv):
         self.populations = self._cross(parents)
         self.step_idx += 1
 
-        GEBVs = self.simulator.GEBV_model(self.populations)
-        infos = [{"GEBV": GEBVs[i]} for i in range(self.n_envs)]
+        infos = self._get_info()
         done = self.step_idx == self.MAX_EPISODE_STEPS
         if done:
-            rews = np.mean(GEBVs, axis=(1, 2))
+            rews = np.mean(infos["GEBV"], axis=(1, 2))
             rews = np.asarray(rews)
             if self.autoreset:
                 self.reset()
@@ -96,13 +94,14 @@ class VecBreedingGym(VectorEnv):
         truncated = np.full(self.n_envs, done)
         return self.populations, rews, terminated, truncated, infos
 
-    def reset(self, seed=None, options=None):
+    def reset_async(self, seed=None, options=None):
         self.step_idx = 0
         if seed is None:
             seed = np.random.randint(2**32)
+
+        self.simulator.set_seed(seed)
         random_key = jax.random.PRNGKey(seed)
-        keys = jax.random.split(random_key, num=self.n_envs + 1)
-        self.random_key = keys[0]
+        keys = jax.random.split(random_key, num=self.n_envs)
 
         if options is not None and "individual_per_gen" in options.keys():
             self.individual_per_gen = options["individual_per_gen"]
@@ -110,10 +109,11 @@ class VecBreedingGym(VectorEnv):
         self.populations = _random_selection(
             self.germplasm,
             self.individual_per_gen,
-            keys[1:]
+            keys
         )
-
         self.reset_infos = self._get_info()
+
+    def reset_wait(self, seed=None, options=None):
         return self.populations, self.reset_infos
 
     def _get_info(self):

@@ -93,3 +93,30 @@ def test_reward_shaping():
     _, reward, _, _, _ = env2.step(action)
 
     assert reward != 0
+
+
+def test_deterministic():
+    env = gym.make("BreedingGym",
+                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
+                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+                   reward_shaping=False
+                   )
+
+    env.reset(seed=7)
+    action = np.array([
+        [1, 2],
+        [1, 5],
+        [1, 7],
+        [2, 5],
+        [2, 9],
+        [4, 7],
+        [4, 8],
+        [5, 9],
+        [6, 8],
+        [6, 9]
+    ])
+
+    for _ in range(10):
+        _, r, _, _, _ = env.step(action)
+
+    assert abs(r - (-714.27819824)) < 1e-8

@@ -66,3 +66,19 @@ def test_kbest_env():
 
     with pytest.raises(Exception):
         env.step(21)
+
+
+def test_gebv_policy():
+    individual_per_gen = 200
+    env = gym.make("KBestBreedingGym",
+                   individual_per_gen=individual_per_gen,
+                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
+                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+                   )
+    env.reset(seed=7)
+    action = 10
+
+    for _ in range(10):
+        _, r, _, _, _ = env.step(action)
+
+    assert abs(r - 8035.5464) < 1e-4

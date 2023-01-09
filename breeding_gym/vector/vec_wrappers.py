@@ -1,34 +1,11 @@
-from gym.vector.vector_env import VectorEnv
+from gym.vector.vector_env import VectorEnvWrapper
 from gym import spaces
 import jax
 import jax.numpy as jnp
 from functools import partial
 
 
-class VecWrapper(VectorEnv):
-
-    def __init__(self, vec_env):
-        self.vec_env = vec_env
-        super().__init__(
-            self.vec_env.n_envs,
-            self.vec_env.single_observation_space,
-            self.vec_env.single_action_space
-        )
-
-    def reset(self):
-        return self.vec_env.reset()
-
-    def step_wait(self):
-        return self.vec_env.step_wait()
-
-    def step_async(self, actions):
-        return self.vec_env.step_async(actions)
-
-    def __getattr__(self, name):
-        return getattr(self.vec_env, name)
-
-
-class SelectionValues(VecWrapper):
+class SelectionValues(VectorEnvWrapper):
 
     def __init__(self, vec_env, k):
         super().__init__(vec_env)
