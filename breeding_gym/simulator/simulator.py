@@ -54,19 +54,22 @@ class BreedingSimulator:
             types['RecombRate'] = 'float32'
             genetic_map = pd.read_table(genetic_map, sep="\t", dtype=types)
 
+        self.n_markers = len(genetic_map)
+        chr_map = genetic_map['CHR.PHYS']
+        self.chr_lens = chr_map.groupby(chr_map).count()
+
         mrk_effects = genetic_map[trait_names]
         self.GEBV_model = GEBVModel(
             marker_effects=mrk_effects.to_numpy(),
+            chr_lens=self.chr_lens.to_numpy(),
             device=self.device
         )
 
-        self.n_markers = len(genetic_map)
         recombination_vec = genetic_map["RecombRate"].to_numpy()
 
         # change semantic to "recombine now" instead of "recombine after"
         recombination_vec[1:] = recombination_vec[:-1]
 
-        chr_map = genetic_map['CHR.PHYS']
         first_mrk_map = np.zeros(len(chr_map), dtype='bool')
         first_mrk_map[1:] = chr_map.iloc[1:].values != chr_map.iloc[:-1].values
         first_mrk_map[0] = True
@@ -102,6 +105,26 @@ class BreedingSimulator:
             self.recombination_vec,
             split_keys
         )
+
+    @property
+    def differentiable_cross_func(self):
+        cross_haplo = jax.vmap(
+            BreedingSimulator._cross_individual,
+            in_axes=(None, None, 0),
+            out_axes=1
+        )
+        cross_individual = jax.vmap(cross_haplo, in_axes=(0, None, 0))
+        cross_pop = jax.vmap(cross_individual, in_axes=(None, None, 0))
+
+        @jax.jit
+        def diff_cross_f(population, cross_weights, random_key):
+            num_keys = len(cross_weights) * len(population) * 2
+            keys = jax.random.split(random_key, num=num_keys)
+            keys = keys.reshape(len(cross_weights), len(population), 2, 2)
+            outer_res = cross_pop(population, self.recombination_vec, keys)
+            return (cross_weights[:, :, None, :] * outer_res).sum(axis=1)
+
+        return diff_cross_f
 
     @jax.jit
     @partial(jax.vmap, in_axes=(0, None, 0))  # parallelize across individuals

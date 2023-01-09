@@ -1,3 +1,4 @@
+from math import ceil
 import numpy as np
 
 
@@ -8,52 +9,101 @@ def yield_index(GEBV_model):
     return yield_index_f
 
 
-def optimal_haploid_value(GEBV_model):
+def _poor_yield_indices(GEBV_model, pop, F):
+    n_poors = int(len(pop) * F)
+    GEBVs = yield_index(GEBV_model)(pop)
+    sorted_indices = np.argsort(GEBVs)
+    poor_indices = sorted_indices[:n_poors]
+    return poor_indices
+
+
+def optimal_haploid_value(GEBV_model, F=0, B=None):
+
     def optimal_haploid_value_f(pop):
-        return GEBV_model.optimal_haploid_value(pop).squeeze()
+        OHP = optimal_haploid_pop(GEBV_model, pop, B)
+        OHV = 2 * GEBV_model(OHP[..., None]).squeeze()
+        OHV = np.array(OHV)
+
+        if F > 0:
+            remove_indices = _poor_yield_indices(GEBV_model, pop, F)
+            OHV[remove_indices] = -float('inf')
+
+        return OHV
 
     return optimal_haploid_value_f
 
 
-def optimal_haploid_pop(GEBV_model, population):
+def optimal_haploid_pop(GEBV_model, population, B=None):
+    if B is None:
+        return _optimal_haploid_pop(GEBV_model, population)
+    else:
+        return _optimal_haploid_pop_B(GEBV_model, population, B)
+
+
+def _optimal_haploid_pop_B(GEBV_model, population, B):
+    OHP = np.empty((population.shape[0], population.shape[1]), dtype='bool')
+
+    start_idx = 0
+    for chr_length in GEBV_model.chr_lens:
+        block_length = ceil(chr_length / B)
+        end_chr = start_idx + chr_length
+        for _ in range(B):
+            end_block = min(start_idx + block_length, end_chr)
+            pop_slice = population[:, start_idx:end_block]
+            effect_slice = GEBV_model.marker_effects[start_idx:end_block]
+            block_gebv = np.einsum(
+                "nmd,me->nd", pop_slice, effect_slice
+            )
+            best_blocks = np.argmax(block_gebv, axis=-1)
+            OHP[:, start_idx:end_block] = np.take_along_axis(
+                pop_slice, best_blocks[:, None, None], axis=2
+            ).squeeze()
+            start_idx = end_block
+
+        assert start_idx == end_chr
+
+    return OHP
+
+
+def _optimal_haploid_pop(GEBV_model, population):
     optimal_haploid_pop = np.empty(
         (population.shape[0], population.shape[1]), dtype='bool'
     )
 
     positive_mask = GEBV_model.positive_mask.squeeze()
 
-    optimal_haploid_pop[:, positive_mask] = np.logical_or(
-        population[:, positive_mask, 0],
-        population[:, positive_mask, 1]
+    optimal_haploid_pop[:, positive_mask] = np.any(
+        population[:, positive_mask], axis=-1
     )
-    optimal_haploid_pop[:, ~positive_mask] = np.logical_and(
-        population[:, ~positive_mask, 0],
-        population[:, ~positive_mask, 1]
+    optimal_haploid_pop[:, ~positive_mask] = np.all(
+        population[:, ~positive_mask], axis=-1
     )
 
     return optimal_haploid_pop
 
 
-def optimal_population_value(GEBV_model, n):
+def optimal_population_value(GEBV_model, n, F=0, B=None):
 
     def optimal_population_value_f(population):
+        indices = np.arange(len(population))
+        remove_indices = _poor_yield_indices(GEBV_model, population, F)
+        indices = np.delete(indices, remove_indices)
+
         output = np.zeros(len(population), dtype='bool')
         positive_mask = GEBV_model.marker_effects[:, 0] > 0
         current_set = ~positive_mask
-        G = optimal_haploid_pop(GEBV_model, population)
+        G = optimal_haploid_pop(GEBV_model, population[indices], B)
 
         for _ in range(n):
-            G[:, positive_mask] = np.logical_or(
-                G[:, positive_mask], current_set[positive_mask]
-            )
-            G[:, ~positive_mask] = np.logical_and(
-                G[:, ~positive_mask], current_set[~positive_mask]
-            )
+            dummy_pop = np.broadcast_to(current_set[None, :], G.shape)
+            dummy_pop = np.stack((G, dummy_pop), axis=2)
+            G = optimal_haploid_pop(GEBV_model, dummy_pop, B)
+            best_ind = np.argmax(GEBV_model(G[:, :, None]))
+            output[indices[best_ind]] = True
+            current_set = G[best_ind]
 
-            best_idx = np.argmax(GEBV_model(G[:, :, None]))
-            output[best_idx] = True
-            current_set = G[best_idx]
-            G[best_idx] = ~positive_mask  # "remove" it
+            indices = np.delete(indices, best_ind)
+            G = optimal_haploid_pop(GEBV_model, population[indices], B)
 
         assert np.count_nonzero(output) == n
         return output  # not OPV but a mask
