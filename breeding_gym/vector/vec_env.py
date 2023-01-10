@@ -66,6 +66,7 @@ class VecBreedingGym(VectorEnv):
         self.step_idx = None
         self.reset_infos = {}
         self._actions = None
+        self.random_key = None
 
     @partial(jax.vmap, in_axes=(None, 0))
     def _cross(self, parents):
@@ -96,12 +97,15 @@ class VecBreedingGym(VectorEnv):
 
     def reset_async(self, seed=None, options=None):
         self.step_idx = 0
-        if seed is None:
+        if seed is not None:
+            self.simulator.set_seed(seed)
+            self.random_key = jax.random.PRNGKey(seed)
+        elif self.random_key is None:
             seed = np.random.randint(2**32)
+            self.random_key = jax.random.PRNGKey(seed)
 
-        self.simulator.set_seed(seed)
-        random_key = jax.random.PRNGKey(seed)
-        keys = jax.random.split(random_key, num=self.n_envs)
+        keys = jax.random.split(self.random_key, num=self.n_envs + 1)
+        self.random_key = keys[0]
 
         if options is not None and "individual_per_gen" in options.keys():
             self.individual_per_gen = options["individual_per_gen"]
@@ -109,7 +113,7 @@ class VecBreedingGym(VectorEnv):
         self.populations = _random_selection(
             self.germplasm,
             self.individual_per_gen,
-            keys
+            keys[1:]
         )
         self.reset_infos = self._get_info()
 

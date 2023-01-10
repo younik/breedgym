@@ -121,13 +121,13 @@ def test_vec_deterministic():
 
     np.random.seed(seed=7)
     pop, _ = env.reset(seed=7)
-    for _ in range(10):
+    for _ in range(20):
         action = np.random.randint(
             len(pop), size=(n_envs, individual_per_gen, 2)
         )
         pop, rews, _, _, _ = env.step(action)
 
-    expected_result = np.array([-538.9117, 555.6274, 1343.117, -1507.5759])
+    expected_result = np.array([-505.67346, -1808.4503, -1688.9503, 1404.2659])
     assert np.allclose(rews, expected_result)
 
 
@@ -146,5 +146,5 @@ def test_vec_gebv_policy():
     for _ in range(10):
         _, rews, _, _, infos = env.step(infos["GEBV"].squeeze())
 
-    expected_result = np.array([8415.941, 8940.3545, 8103.2036, 9027.615])
+    expected_result = np.array([9027.615, 9027.615, 7257.824, 7605.8086])
     assert np.allclose(rews, expected_result)
