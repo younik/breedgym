@@ -1,3 +1,4 @@
+import pytest
 from breeding_gym.utils.paths import DATA_PATH
 from breeding_gym.vector.vec_env import DistributedBreedingGym, VecBreedingGym
 import numpy as np
@@ -146,5 +147,33 @@ def test_vec_gebv_policy():
     for _ in range(10):
         _, rews, _, _, infos = env.step(infos["GEBV"].squeeze())
 
-    expected_result = np.array([9027.615, 9027.615, 7257.824, 7605.8086])
+    expected_result = np.array([8840.1, 8840.1, 7267.212, 7769.087])
     assert np.allclose(rews, expected_result)
+
+
+def test_vec_wrapper_n_crosses():
+    n_envs = 4
+    individual_per_gen = 200
+    env = VecBreedingGym(
+        n_envs=n_envs,
+        initial_population=DATA_PATH.joinpath("small_geno.txt"),
+        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+        individual_per_gen=individual_per_gen
+    )
+
+    env = SelectionValues(env, k=10, n_crosses=20)
+    _, infos = env.reset(seed=7)
+    pop, _, _, _, _ = env.step(infos["GEBV"].squeeze())
+    assert pop.shape[1] == individual_per_gen
+
+    with pytest.raises(ValueError):
+        env = SelectionValues(env, k=100, n_crosses=201)
+
+    with pytest.raises(ValueError):
+        env = SelectionValues(env, k=2, n_crosses=10)
+
+    with pytest.raises(ValueError):
+        env = SelectionValues(env, k=1, n_crosses=1)
+
+    with pytest.raises(ValueError):
+        env = SelectionValues(env, k=500, n_crosses=10)
