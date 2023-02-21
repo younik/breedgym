@@ -1,11 +1,10 @@
-from typing import Optional, Tuple
+from typing import Optional
 from gym.vector.vector_env import VectorEnvWrapper
 from gym import spaces
 import jax
 import jax.numpy as jnp
-from jaxtyping import Array, Bool, Float, Int
+from jaxtyping import Array, Float, Int
 from functools import partial
-from breeding_gym.simulator.typing import Population
 from breeding_gym.vector import VecBreedingGym
 
 

@@ -65,7 +65,6 @@ class BreedingSimulator:
         mrk_effects = genetic_map[trait_names]
         self.GEBV_model = GEBVModel(
             marker_effects=mrk_effects.to_numpy(),
-            chr_lens=self.chr_lens.to_numpy(),
             device=self.device
         )
 
@@ -195,7 +194,7 @@ class BreedingSimulator:
         self,
         population: Population["n"],
         n_offspring: int = 1
-    ) -> Population["n * (n - 1) / 2 * n_offspring"]:
+    ) -> Population["n*(n-1)/2*n_offspring"]:
         if n_offspring < 1:
             raise ValueError("n_offspring must be higher or equal to 1")
 
@@ -207,7 +206,7 @@ class BreedingSimulator:
     def _diallel_indices(
         self,
         indices: Int[Array, "n"]
-    ) -> Int[Array, "n * (n - 1) / 2"]:
+    ) -> Int[Array, "n*(n-1)/2"]:
         mesh1, mesh2 = jnp.meshgrid(indices, indices)
         triu_indices = jnp.triu_indices(len(indices), k=1)
         mesh1 = mesh1[triu_indices]
@@ -219,7 +218,7 @@ class BreedingSimulator:
         population: Population["n"],
         n_crosses: int,
         n_offspring: int = 1
-    ) -> Population["n_crosses * n_offspring"]:
+    ) -> Population["n_crosses*n_offspring"]:
         if n_crosses < 1:
             raise ValueError("n_crosses must be higher or equal to 1")
         if n_offspring < 1:

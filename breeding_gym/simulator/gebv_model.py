@@ -1,9 +1,8 @@
-from typing import NamedTuple
+from typing import Tuple
 import jax.numpy as jnp
 import jax
-from jaxtyping import Array, Float
+from jaxtyping import Array, Bool, Float
 from breeding_gym.simulator.typing import Population
-
 
 
 class GEBVModel:
@@ -40,7 +39,7 @@ class GEBVModel:
     @jax.jit
     def _effect_properties(
         marker_effects: Float[Array, "m traits"]
-    ) -> NamedTuple:
+    ) -> Tuple[Bool[Array, "m"], float, float, float, float]:
         positive_mask = marker_effects > 0
 
         max_gebv = 2 * jnp.sum(marker_effects, axis=0, where=positive_mask)
@@ -49,11 +48,4 @@ class GEBVModel:
         # using variance property for sum of independent variables
         var = jnp.mean(marker_effects**2, axis=0) / 2
 
-        return NamedTuple(
-            positive_mask=positive_mask,
-            max=max_gebv,
-            min=min_gebv,
-            mean=mean,
-            var=var
-        )
-
+        return positive_mask, max_gebv, min_gebv, mean, var

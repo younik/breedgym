@@ -10,7 +10,8 @@ import jax
 from jax._src.lib import xla_client as xc
 from jaxtyping import Array, Bool, Float, Int
 import numpy as np
-from breeding_gym.simulator import BreedingSimulator, Population, Parents
+from breeding_gym.simulator import BreedingSimulator
+from breeding_gym.simulator.typing import Population, Parents
 from breeding_gym.utils.paths import DATA_PATH
 
 
