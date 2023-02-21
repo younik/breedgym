@@ -2,11 +2,15 @@ from pathlib import Path
 from typing import Callable, List, Optional, Union
 import pandas as pd
 from breeding_gym.simulator.gebv_model import GEBVModel
+from breeding_gym.simulator.typing import N_MARKERS, Haploid, Individual
+from breeding_gym.simulator.typing import Parents, Population
 from breeding_gym.utils.index_functions import yield_index
 from breeding_gym.utils.paths import DATA_PATH
 import numpy as np
 import jax
 import jax.numpy as jnp
+from jax._src.lib import xla_client as xc
+from jaxtyping import Array, Float, Int
 from functools import partial
 import random
 import logging
@@ -21,10 +25,10 @@ class BreedingSimulator:
         self,
         genetic_map: Union[Path, pd.DataFrame] = GENETIC_MAP,
         trait_names: List["str"] = ["Yield"],
-        h2: Optional[List[int]] = None,
+        h2: Optional[List[float]] = None,
         seed: Optional[int] = None,
-        device=None,
-        backend=None
+        device: xc.Device = None,
+        backend: str | xc._xla.Client = None
     ):
         if h2 is None:
             h2 = len(trait_names) * [1]
@@ -41,7 +45,7 @@ class BreedingSimulator:
             assert len(matched_devices) <= 1
             if len(matched_devices) == 0:
                 print(jax.devices(), flush=True)
-                logging.warn(
+                logging.warning(
                     f"No device with id:{device}. Using the default one."
                 )
                 device = jax.local_devices(backend=backend)[0]
@@ -92,11 +96,11 @@ class BreedingSimulator:
         population = population.reshape(population.shape[0], self.n_markers, 2)
         return jax.device_put(population, device=self.device)
 
-    def save_population(self, population: np.ndarray, file_name: Path):
+    def save_population(self, population: Population["n"], file_name: Path | str):
         flatten_pop = population.reshape(population.shape[0], -1)
         np.savetxt(file_name, flatten_pop, fmt="%i")
 
-    def cross(self, parents: np.ndarray):
+    def cross(self, parents: Parents["n"]) -> Population["n"]:
         keys = jax.random.split(self.random_key, num=len(parents) * 2 + 1)
         self.random_key = keys[0]
         split_keys = keys[1:].reshape(len(parents), 2, 2)
@@ -107,7 +111,7 @@ class BreedingSimulator:
         )
 
     @property
-    def differentiable_cross_func(self):
+    def differentiable_cross_func(self) -> Callable:
         cross_haplo = jax.vmap(
             BreedingSimulator._cross_individual,
             in_axes=(None, None, 0),
@@ -117,7 +121,11 @@ class BreedingSimulator:
         cross_pop = jax.vmap(cross_individual, in_axes=(None, None, 0))
 
         @jax.jit
-        def diff_cross_f(population, cross_weights, random_key):
+        def diff_cross_f(
+            population: Population["n"],
+            cross_weights: Float[Array, "m n 2"],
+            random_key: jax.random.PRNGKeyArray
+        ) -> Population["m"]:
             num_keys = len(cross_weights) * len(population) * 2
             keys = jax.random.split(random_key, num=num_keys)
             keys = keys.reshape(len(cross_weights), len(population), 2, 2)
@@ -129,7 +137,11 @@ class BreedingSimulator:
     @jax.jit
     @partial(jax.vmap, in_axes=(0, None, 0))  # parallelize across individuals
     @partial(jax.vmap, in_axes=(0, None, 0), out_axes=1)  # parallelize parents
-    def _cross(parent, recombination_vec, random_key):
+    def _cross(
+        parent: Individual,
+        recombination_vec: Float[Array, N_MARKERS],
+        random_key: jax.random.PRNGKeyArray
+    ) -> Haploid:
         return BreedingSimulator._cross_individual(
             parent,
             recombination_vec,
@@ -137,21 +149,25 @@ class BreedingSimulator:
         )
 
     @jax.jit
-    def _cross_individual(parent, recombination_vec, random_key):
+    def _cross_individual(
+        parent: Individual,
+        recombination_vec: Float[Array, N_MARKERS],
+        random_key: jax.random.PRNGKeyArray
+    ) -> Haploid:
         samples = jax.random.uniform(random_key, shape=recombination_vec.shape)
         rec_sites = samples < recombination_vec
         crossover_mask = jax.lax.associative_scan(jnp.logical_xor, rec_sites)
 
         crossover_mask = crossover_mask.astype(jnp.int8)
-        progenies = jnp.take_along_axis(
+        haploid = jnp.take_along_axis(
             parent,
             crossover_mask[:, None],
             axis=-1
         )
 
-        return progenies.squeeze()
+        return haploid.squeeze()
 
-    def double_haploid(self, population: np.ndarray):
+    def double_haploid(self, population: Population["n"]) -> Population["n"]:
         keys = jax.random.split(self.random_key, num=len(population) + 1)
         self.random_key = keys[0]
         split_keys = keys[1:]
@@ -163,15 +179,23 @@ class BreedingSimulator:
 
     @jax.jit
     @partial(jax.vmap, in_axes=(0, None, 0))  # parallelize across individuals
-    def _vmap_dh(population, recombination_vec, random_key):
+    def _vmap_dh(
+        individual: Individual,
+        recombination_vec: Float[Array, N_MARKERS],
+        random_key: jax.random.PRNGKeyArray
+    ) -> Individual:
         haploid = BreedingSimulator._cross_individual(
-            population,
+            individual,
             recombination_vec,
             random_key
         )
         return jnp.broadcast_to(haploid[:, None], shape=(*haploid.shape, 2))
 
-    def diallel(self, population: np.ndarray, n_offspring: int = 1):
+    def diallel(
+        self,
+        population: Population["n"],
+        n_offspring: int = 1
+    ) -> Population["n * (n - 1) / 2 * n_offspring"]:
         if n_offspring < 1:
             raise ValueError("n_offspring must be higher or equal to 1")
 
@@ -180,7 +204,10 @@ class BreedingSimulator:
         cross_indices = np.repeat(diallel_indices, n_offspring, axis=0)
         return self.cross(population[cross_indices])
 
-    def _diallel_indices(self, indices):
+    def _diallel_indices(
+        self,
+        indices: Int[Array, "n"]
+    ) -> Int[Array, "n * (n - 1) / 2"]:
         mesh1, mesh2 = jnp.meshgrid(indices, indices)
         triu_indices = jnp.triu_indices(len(indices), k=1)
         mesh1 = mesh1[triu_indices]
@@ -189,10 +216,10 @@ class BreedingSimulator:
 
     def random_crosses(
         self,
-        population: np.ndarray,
+        population: Population["n"],
         n_crosses: int,
         n_offspring: int = 1
-    ):
+    ) -> Population["n_crosses * n_offspring"]:
         if n_crosses < 1:
             raise ValueError("n_crosses must be higher or equal to 1")
         if n_offspring < 1:
@@ -217,10 +244,10 @@ class BreedingSimulator:
 
     def select(
         self,
-        population: np.ndarray,
+        population: Population["n"],
         k: int,
-        f_index: Callable[[np.ndarray], int] = None
-    ):
+        f_index: Callable[[Population["n"]], Float[Array, "n"]] = None
+    ) -> Population["k"]:
         if f_index is None:
             f_index = yield_index(self.GEBV_model)
 
@@ -228,16 +255,25 @@ class BreedingSimulator:
         _, best_pop = jax.lax.top_k(indices, k)
         return population[best_pop, :, :]
 
-    def GEBV(self, population: np.ndarray) -> pd.DataFrame:
+    def GEBV(
+        self,
+        population: Population["n traits"]
+    ) -> pd.DataFrame:
         GEBV = self.GEBV_model(population)
         return pd.DataFrame(GEBV, columns=self.trait_names)
 
-    def phenotype(self, population: np.ndarray):
+    def phenotype(
+        self,
+        population: Population["n"]
+    ) -> Float[Array, "n traits"]:
         noise = jax.random.normal(self.random_key, shape=(len(self.h2),))
         env_effect = (1 - self.h2) * (self.var_gebv * noise + self.mean_gebv)
         return self.h2 * self.GEBV(population) + env_effect
 
-    def corrcoef(self, population: np.ndarray):
+    def corrcoef(
+        self,
+        population: Population["n"]
+    ) -> Float[Array, "n"]:
         monoploid_enc = population.reshape(population.shape[0], -1)
         mean_pop = jnp.mean(monoploid_enc, axis=0)
         pop_with_centroid = jnp.vstack([mean_pop, monoploid_enc])
@@ -245,17 +281,17 @@ class BreedingSimulator:
         return corrcoef[0, 1:]
 
     @property
-    def max_gebv(self):
+    def max_gebv(self) -> float:
         return self.GEBV_model.max
 
     @property
-    def min_gebv(self):
+    def min_gebv(self) -> float:
         return self.GEBV_model.min
 
     @property
-    def mean_gebv(self):
+    def mean_gebv(self) -> float:
         return self.GEBV_model.mean
 
     @property
-    def var_gebv(self):
+    def var_gebv(self) -> float:
         return self.GEBV_model.var

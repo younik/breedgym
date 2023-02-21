@@ -3,7 +3,7 @@ from breeding_gym.utils.paths import DATA_PATH
 from breeding_gym.vector.vec_env import DistributedBreedingGym, VecBreedingGym
 import numpy as np
 import jax
-from breeding_gym.vector.vec_wrappers import SelectionValues
+from breeding_gym.vector.vec_wrappers import PairScores, SelectionValues
 import warnings
 
 
@@ -147,7 +147,7 @@ def test_vec_gebv_policy():
     for _ in range(10):
         _, rews, _, _, infos = env.step(infos["GEBV"].squeeze())
 
-    expected_result = np.array([8840.1, 8840.1, 7267.212, 7769.087])
+    expected_result = np.array([8954.3, 8987.394, 7257.9897, 7520.409])
     assert np.allclose(rews, expected_result)
 
 
@@ -177,3 +177,24 @@ def test_vec_wrapper_n_crosses():
 
     with pytest.raises(ValueError):
         env = SelectionValues(env, k=500, n_crosses=10)
+
+
+def test_vec_pair_score():
+    n_envs = 4
+    individual_per_gen = 200
+    env = VecBreedingGym(
+        n_envs=n_envs,
+        initial_population=DATA_PATH.joinpath("small_geno.txt"),
+        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+        individual_per_gen=individual_per_gen
+    )
+    env = PairScores(env)
+
+    _, infos = env.reset(seed=7)
+    for _ in range(10):
+        gebvs = infos["GEBV"].squeeze()
+        gebvs_matrix_sum = np.add.outer(gebvs, gebvs)
+        _, rews, _, _, infos = env.step(gebvs_matrix_sum)
+
+    expected_result = np.array([2854.7405, 7821.8975, 379.87018, 244.54022])
+    assert np.allclose(rews, expected_result)

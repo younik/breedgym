@@ -1,19 +1,29 @@
 from functools import partial
 from pathlib import Path
+from typing import List, Optional, Union, Tuple
 from typing_extensions import override
 from gym import spaces
 from gym.vector.vector_env import VectorEnv
 from gym.vector.async_vector_env import AsyncVectorEnv
 from gym.vector.utils.spaces import batch_space
 import jax
+from jax._src.lib import xla_client as xc
+from jaxtyping import Array, Bool, Float, Int
 import numpy as np
-from breeding_gym.simulator.simulator import BreedingSimulator
+from breeding_gym.simulator import BreedingSimulator, Population, Parents
 from breeding_gym.utils.paths import DATA_PATH
+
+
+GENOME_FILE = DATA_PATH.joinpath("geno.txt")
 
 
 @partial(jax.jit, static_argnums=1)
 @partial(jax.vmap, in_axes=(None, None, 0))
-def _random_selection(germplasm, length, key):
+def _random_selection(
+    germplasm: Population["n"],
+    length: int,
+    key: jax.random.PRNGKeyArray
+) -> Population["length"]:
     return jax.random.choice(
         key,
         germplasm,
@@ -28,10 +38,10 @@ class VecBreedingGym(VectorEnv):
 
     def __init__(
         self,
-        n_envs,
-        initial_population=DATA_PATH.joinpath("geno.txt"),
-        individual_per_gen=None,
-        autoreset=True,
+        n_envs: int,
+        initial_population: Union[str, Path, Population["n"]] = GENOME_FILE,
+        individual_per_gen: Optional[int] = None,
+        autoreset: bool = True,
         **kwargs
     ):
         self.n_envs = n_envs
@@ -69,13 +79,19 @@ class VecBreedingGym(VectorEnv):
         self.random_key = None
 
     @partial(jax.vmap, in_axes=(None, 0))
-    def _cross(self, parents):
+    def _cross(self, parents: Parents["n"]) -> Population["n"]:
         return self.simulator.cross(parents)
 
-    def step_async(self, actions):
+    def step_async(self, actions: Int[Array, "envs n 2"]):
         self._actions = jax.device_put(actions, device=self.device)
 
-    def step_wait(self):
+    def step_wait(self) -> Tuple[
+        Population["envs n"],
+        Float[Array, "envs"],
+        Bool[Array, "envs"],
+        Bool[Array, "envs"],
+        dict
+    ]:
         arange_envs = np.arange(self.n_envs)[:, None, None]
         parents = self.populations[arange_envs, self._actions]
         self.populations = self._cross(parents)
@@ -95,7 +111,11 @@ class VecBreedingGym(VectorEnv):
         truncated = np.full(self.n_envs, done)
         return self.populations, rews, terminated, truncated, infos
 
-    def reset_async(self, seed=None, options=None):
+    def reset_async(
+        self,
+        seed: Optional[int] = None,
+        options: Optional[dict] = None
+    ):
         self.step_idx = 0
         if seed is not None:
             self.simulator.set_seed(seed)
@@ -117,17 +137,27 @@ class VecBreedingGym(VectorEnv):
         )
         self.reset_infos = self._get_info()
 
-    def reset_wait(self, seed=None, options=None):
+    def reset_wait(
+        self,
+        seed: Optional[int] = None,
+        options: Optional[dict] = None
+    ) -> Tuple[Population["envs n"], dict]:
         return self.populations, self.reset_infos
 
-    def _get_info(self):
+    def _get_info(self) -> dict:
         GEBVs = self.simulator.GEBV_model(self.populations)
         return {"GEBV": GEBVs}
 
 
 class _VecBreedingGym(VecBreedingGym):
 
-    def step_wait(self):
+    def step_wait(self) -> Tuple[
+        Population["envs n"],
+        Float[Array, "envs"],
+        bool,
+        bool,
+        dict
+    ]:
         obs, rews, ter, tru, infos = super().step_wait()
         assert np.all(ter == ter[0])
         assert np.all(tru == tru[0])
@@ -138,9 +168,9 @@ class DistributedBreedingGym(AsyncVectorEnv):
 
     def __init__(
         self,
-        envs_per_device,
-        initial_population,
-        devices=None,
+        envs_per_device: int,
+        initial_population: Union[str, Path, Population["n"]],
+        devices: Optional[List[xc.Device]] = None,
         **kwargs
     ):
         if devices is None:
@@ -185,11 +215,11 @@ class DistributedBreedingGym(AsyncVectorEnv):
         )
         self._actions = None
 
-    def reset(self, *args, **kwargs):
+    def reset(self, *args, **kwargs) -> Tuple[Population["envs n"], dict]:
         obs, info = super().reset(*args, **kwargs)
         return obs.reshape(-1, *obs.shape[2:]), info
 
-    def step_async(self, actions):
+    def step_async(self, actions: Int[Array, "envs n 2"]):
         super().step_async(
             actions.reshape(
                 len(self.devices),
@@ -198,7 +228,13 @@ class DistributedBreedingGym(AsyncVectorEnv):
             )
         )
 
-    def step_wait(self, *args, **kwargs):
+    def step_wait(self, *args, **kwargs) -> Tuple[
+        Population["envs n"],
+        Float[Array, "envs"],
+        Bool[Array, "envs"],
+        Bool[Array, "envs"],
+        dict
+    ]:
         obs, rews, ter, tru, infos = super().step_wait(*args, **kwargs)
         obs = obs.reshape(-1, *obs.shape[2:])
 

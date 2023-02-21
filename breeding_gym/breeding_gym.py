@@ -1,14 +1,21 @@
 from math import sqrt, ceil, floor
+from typing import Optional, Tuple
 import gym
 from gym import spaces
 import numpy as np
 import jax
+from jaxtyping import Array, Float, Int
+import pandas as pd
 from pathlib import Path
 from breeding_gym.simulator import BreedingSimulator
+from breeding_gym.simulator.typing import Population
 from breeding_gym.utils.paths import DATA_PATH
 from breeding_gym.utils.plot_utils import set_up_plt, NEURIPS_FONT_FAMILY
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+
+
+GENOME_FILE = DATA_PATH.joinpath("geno.txt")
 
 
 class BreedingGym(gym.Env):
@@ -19,10 +26,10 @@ class BreedingGym(gym.Env):
 
     def __init__(
         self,
-        initial_population=DATA_PATH.joinpath("geno.txt"),
-        reward_shaping=False,
-        render_mode=None,
-        render_kwargs={},
+        initial_population: Path | Population["n"] = GENOME_FILE,
+        reward_shaping: bool = False,
+        render_mode: Optional[str] = None,
+        render_kwargs: dict = {},
         **kwargs
     ):
         self.simulator = BreedingSimulator(**kwargs)
@@ -89,7 +96,11 @@ class BreedingGym(gym.Env):
             ))
         )
 
-    def reset(self, seed=None, options=None):
+    def reset(
+        self,
+        seed: Optional[int] = None,
+        options: Optional[dict] = None
+    ) -> Tuple[Population["n"], dict]:
         super().reset(seed=seed)
         if seed is not None:
             self.simulator.set_seed(seed=seed)
@@ -113,7 +124,10 @@ class BreedingGym(gym.Env):
 
         return self.population, info
 
-    def step(self, action):
+    def step(
+        self,
+        action: Int[Array, "n 2"]
+    ) -> Tuple[Population["n"], float, bool, bool, dict]:
         """Action is an array of shape n x 2, where n is the number of crosses.
            Each row contains a couple of parent indices.
         """
@@ -134,7 +148,7 @@ class BreedingGym(gym.Env):
 
         return self.population, reward, False, truncated, info
 
-    def _render_step(self, info):
+    def _render_step(self, info: dict):
         def boxplot(axs, values):
             bp = axs.boxplot(
                 values,
@@ -151,7 +165,7 @@ class BreedingGym(gym.Env):
             idx += 1
             boxplot(self.axs[idx], feature())
 
-    def render(self, file_name=None):
+    def render(self, file_name: Optional[str | Path] = None):
         if self.render_mode is not None:
             set_up_plt(self.render_kwargs["font"], use_tex=False)
 
@@ -195,13 +209,13 @@ class BreedingGym(gym.Env):
         return self._population
 
     @population.setter
-    def population(self, new_pop):
+    def population(self, new_pop: Population["n"]):
         self._population = new_pop
         self._GEBV_cache = False
         self._corrcoef_cache = False
 
     @property
-    def GEBV(self):
+    def GEBV(self) -> pd.DataFrame:
         """
         Returns the GEBV for each traits of each individuals.
         If the population is composed by n individual,
@@ -213,7 +227,7 @@ class BreedingGym(gym.Env):
         return self._GEBV
 
     @property
-    def corrcoef(self):
+    def corrcoef(self) -> Float[Array, "n"]:
         if not self._corrcoef_cache:  # WARN: not multithreading safe
             self._corrcoef = self.simulator.corrcoef(self.population)
             self._corrcoef_cache = True

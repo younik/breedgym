@@ -1,11 +1,14 @@
 from math import ceil, sqrt
+from typing import Callable, Optional, Tuple
 from breeding_gym.breeding_gym import BreedingGym
+from breeding_gym.simulator.typing import Population
 from breeding_gym.utils.index_functions import yield_index
 import gym
 from gym import spaces
 import numpy as np
 import jax
 import jax.numpy as jnp
+from jaxtyping import Array, Float
 
 
 class SimplifiedBreedingGym(gym.Wrapper):
@@ -14,9 +17,9 @@ class SimplifiedBreedingGym(gym.Wrapper):
 
     def __init__(
         self,
-        env=None,
-        individual_per_gen=2250,
-        f_index=None,
+        env: Optional[BreedingGym] = None,
+        individual_per_gen: int = 2250,
+        f_index: None | Callable[[Population["n"]], Float[Array, "n"]] = None,
         **kwargs
     ):
         if env is None:
@@ -40,7 +43,11 @@ class SimplifiedBreedingGym(gym.Wrapper):
 
         self.f_index = f_index
 
-    def reset(self, seed=None, options=None):
+    def reset(
+        self,
+        seed: Optional[int] = None,
+        options: Optional[dict] = None
+    ) -> Tuple[dict, dict]:
         if options is None:
             options = {}
         options["n_individuals"] = self.individual_per_gen
@@ -51,7 +58,10 @@ class SimplifiedBreedingGym(gym.Wrapper):
 
         return self._simplified_obs(), info
 
-    def step(self, action):
+    def step(
+        self,
+        action: dict
+    ) -> Tuple[dict, float, bool, bool, dict]:
         n_bests = action["n_bests"]
         n_crosses = action["n_crosses"]
         n_offspring = ceil(self.individual_per_gen / n_crosses)
@@ -83,14 +93,14 @@ class SimplifiedBreedingGym(gym.Wrapper):
         return obs, rew, terminated, truncated, info
 
     @jax.jit
-    def _correlation(population):
+    def _correlation(population: Population["n"]) -> Float[Array, "n"]:
         monoploidy = jnp.sum(population, axis=-1) - 1
         mean_ind = jnp.mean(monoploidy, axis=0)
         norms = jnp.linalg.norm(monoploidy, axis=-1)
         norms *= jnp.linalg.norm(mean_ind, axis=-1)
         return jnp.dot(monoploidy, mean_ind) / norms
 
-    def _simplified_obs(self):
+    def _simplified_obs(self) -> dict:
         norm_corr = SimplifiedBreedingGym._correlation(self.population)
         norm_yield = self.GEBV["Yield"].to_numpy()
         return {
@@ -108,7 +118,7 @@ class KBestBreedingGym(SimplifiedBreedingGym):
         max_best = (1 + sqrt(1 + 8 * self.individual_per_gen)) // 2
         self.action_space = spaces.Discrete(int(max_best) - 1, start=2)
 
-    def step(self, action):
+    def step(self, action: int) -> Tuple[dict, float, bool, bool, dict]:
         n_bests = action
         n_crosses = n_bests * (n_bests - 1) // 2
 
