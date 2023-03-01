@@ -43,10 +43,12 @@ class VecBreedingGym(VectorEnv):
         initial_population: Union[str, Path, Population["n"]] = GENOME_FILE,
         individual_per_gen: Optional[int] = None,
         autoreset: bool = True,
+        reward_shaping: bool = False,
         **kwargs
     ):
         self.n_envs = n_envs
         self.autoreset = autoreset
+        self.reward_shaping = reward_shaping
         self.simulator = BreedingSimulator(**kwargs)
         self.device = self.simulator.device
 
@@ -100,10 +102,10 @@ class VecBreedingGym(VectorEnv):
 
         infos = self._get_info()
         done = self.step_idx == self.MAX_EPISODE_STEPS
-        if done:
+        if self.reward_shaping or done:
             rews = np.mean(infos["GEBV"], axis=(1, 2))
             rews = np.asarray(rews)
-            if self.autoreset:
+        if done and self.autoreset:
                 self.reset()
         else:
             rews = np.zeros(self.n_envs)
