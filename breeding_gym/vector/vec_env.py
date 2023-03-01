@@ -35,18 +35,19 @@ def _random_selection(
 
 class VecBreedingGym(VectorEnv):
 
-    MAX_EPISODE_STEPS = 10
 
     def __init__(
         self,
         n_envs: int,
         initial_population: Union[str, Path, Population["n"]] = GENOME_FILE,
         individual_per_gen: Optional[int] = None,
+        num_generations: int = 10,
         autoreset: bool = True,
         reward_shaping: bool = False,
         **kwargs
     ):
         self.n_envs = n_envs
+        self.num_generations = num_generations
         self.autoreset = autoreset
         self.reward_shaping = reward_shaping
         self.simulator = BreedingSimulator(**kwargs)
@@ -101,7 +102,7 @@ class VecBreedingGym(VectorEnv):
         self.step_idx += 1
 
         infos = self._get_info()
-        done = self.step_idx == self.MAX_EPISODE_STEPS
+        done = self.step_idx == self.num_generations
         if self.reward_shaping or done:
             rews = np.mean(infos["GEBV"], axis=(1, 2))
             rews = np.asarray(rews)

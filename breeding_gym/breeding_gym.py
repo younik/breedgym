@@ -20,13 +20,12 @@ GENOME_FILE = DATA_PATH.joinpath("geno.txt")
 
 class BreedingGym(gym.Env):
 
-    MAX_EPISODE_STEPS = 10
-
     metadata = {"render_modes": ["matplotlib"], "render_fps": 1}
 
     def __init__(
         self,
         initial_population: Path | Population["n"] = GENOME_FILE,
+        num_generations: int = 10,
         reward_shaping: bool = False,
         render_mode: Optional[str] = None,
         render_kwargs: dict = {},
@@ -40,6 +39,7 @@ class BreedingGym(gym.Env):
         self.device = self.simulator.device
         self.germplasm = jax.device_put(germplasm, device=self.device)
 
+        self.num_generations = num_generations
         self.reward_shaping = reward_shaping
 
         self.observation_space = spaces.Box(
@@ -140,7 +140,7 @@ class BreedingGym(gym.Env):
         if self.render_mode is not None:
             self._render_step(info)
 
-        truncated = self.step_idx == self.MAX_EPISODE_STEPS
+        truncated = self.step_idx == self.num_generations
         if self.reward_shaping or truncated:
             reward = np.mean(self.GEBV.to_numpy())
         else:
