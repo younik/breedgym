@@ -35,7 +35,6 @@ def _random_selection(
 
 class VecBreedingGym(VectorEnv):
 
-
     def __init__(
         self,
         n_envs: int,
@@ -106,10 +105,11 @@ class VecBreedingGym(VectorEnv):
         if self.reward_shaping or done:
             rews = np.mean(infos["GEBV"], axis=(1, 2))
             rews = np.asarray(rews)
-        if done and self.autoreset:
-                self.reset()
         else:
             rews = np.zeros(self.n_envs)
+
+        if done and self.autoreset:
+            self.reset()
 
         terminated = np.full(self.n_envs, False)
         truncated = np.full(self.n_envs, done)
