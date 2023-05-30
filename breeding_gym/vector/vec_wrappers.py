@@ -6,6 +6,7 @@ import jax.numpy as jnp
 from jaxtyping import Array, Float, Int
 from functools import partial
 from breeding_gym.vector import VecBreedingGym
+from math import prod
 
 
 class SelectionValues(VectorEnvWrapper):
@@ -85,7 +86,8 @@ class PairScores(VectorEnvWrapper):
     def __init__(self, vec_env: VecBreedingGym):
         super().__init__(vec_env)
 
-        action_shape = self.individual_per_gen, self.individual_per_gen
+        self.n_crosses = self.individual_per_gen
+        action_shape = self.n_crosses, self.n_crosses
         self.single_action_space = spaces.Box(
             -1e5, 1e5, shape=action_shape
         )
@@ -99,19 +101,43 @@ class PairScores(VectorEnvWrapper):
         self,
         action: Float[Array, "n n"]
     ) -> Int[Array, "n 2"]:
-        n_crosses = self.individual_per_gen
-        best_values, best_crosses = jax.lax.top_k(action.flatten(), n_crosses)
-        offspring_per_cross = jax.nn.softmax(best_values) * n_crosses
-        row_indices = best_crosses // n_crosses
-        col_indices = best_crosses % n_crosses
+        best_values, best_crosses = jax.lax.top_k(action.flatten(), self.n_crosses)
+        offspring_per_cross = jax.nn.softmax(best_values) * self.n_crosses
+        row_indices = best_crosses // self.n_crosses
+        col_indices = best_crosses % self.n_crosses
         cross_indices = jnp.stack((row_indices, col_indices), axis=1)
         return jnp.repeat(
             cross_indices,
             jnp.ceil(offspring_per_cross).astype(jnp.int32),
             axis=0,
-            total_repeat_length=self.individual_per_gen
+            total_repeat_length=self.n_crosses
         )
 
     def step_async(self, actions: Float[Array, "envs n n"]):
         low_level_actions = self._convert_actions(actions)
         super().step_async(low_level_actions)
+
+
+class RavelIndex(VectorEnvWrapper):
+
+    def __init__(self, vec_env: VecBreedingGym):
+        super().__init__(vec_env)
+        self.action_shape = self.single_action_space.shape
+        n_elems = prod(self.action_shape)
+        n_vec = jnp.full((self.individual_per_gen,), n_elems)
+        self.single_action_space = spaces.MultiDiscrete(n_vec)
+        self.action_space = spaces.MultiDiscrete(
+            jnp.broadcast_to(n_vec[None, ...], (self.n_envs, *n_vec.shape))
+        )
+
+    @partial(jax.vmap, in_axes=(None, 0))
+    def _convert_actions(
+        self,
+        action: Float[Array, "n"]
+    ) -> Int[Array, "n 2"]:
+        indices = jnp.unravel_index(action, self.action_shape)
+        return jnp.stack(indices, axis=1)
+
+    def step_async(self, actions):
+        actions = self._convert_actions(actions)
+        return super().step_async(actions)

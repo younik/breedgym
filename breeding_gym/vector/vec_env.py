@@ -10,8 +10,8 @@ import jax
 from jax._src.lib import xla_client as xc
 from jaxtyping import Array, Bool, Float, Int
 import numpy as np
-from breeding_gym.simulator import BreedingSimulator
-from breeding_gym.simulator.typing import Population, Parents
+from chromax import Simulator
+from chromax.typing import Population, Parents
 from breeding_gym.utils.paths import DATA_PATH
 
 
@@ -49,13 +49,14 @@ class VecBreedingGym(VectorEnv):
         self.num_generations = num_generations
         self.autoreset = autoreset
         self.reward_shaping = reward_shaping
-        self.simulator = BreedingSimulator(**kwargs)
+        self.simulator = Simulator(**kwargs)
         self.device = self.simulator.device
 
         germplasm = initial_population
         if isinstance(initial_population, (str, Path)):
             germplasm = self.simulator.load_population(initial_population)
 
+        import pdb; pdb.set_trace()
         self.germplasm = jax.device_put(germplasm, device=self.device)
         if individual_per_gen is None:
             individual_per_gen = len(self.germplasm)
@@ -82,7 +83,7 @@ class VecBreedingGym(VectorEnv):
         self.random_key = None
 
     @partial(jax.vmap, in_axes=(None, 0))
-    def _cross(self, parents: Parents["n"]) -> Population["n"]:
+    def cross(self, parents: Parents["n"]) -> Population["n"]:
         return self.simulator.cross(parents)
 
     def step_async(self, actions: Int[Array, "envs n 2"]):
@@ -97,13 +98,13 @@ class VecBreedingGym(VectorEnv):
     ]:
         arange_envs = np.arange(self.n_envs)[:, None, None]
         parents = self.populations[arange_envs, self._actions]
-        self.populations = self._cross(parents)
+        self.populations = self.cross(parents)
         self.step_idx += 1
 
-        infos = self._get_info()
+        infos = self.get_info()
         done = self.step_idx == self.num_generations
         if self.reward_shaping or done:
-            rews = np.mean(infos["GEBV"], axis=(1, 2))
+            rews = np.max(infos["GEBV"], axis=(1, 2))
             rews = np.asarray(rews)
         else:
             rews = np.zeros(self.n_envs)
@@ -139,7 +140,7 @@ class VecBreedingGym(VectorEnv):
             self.individual_per_gen,
             keys[1:]
         )
-        self.reset_infos = self._get_info()
+        self.reset_infos = self.get_info()
 
     def reset_wait(
         self,
@@ -148,9 +149,12 @@ class VecBreedingGym(VectorEnv):
     ) -> Tuple[Population["envs n"], dict]:
         return self.populations, self.reset_infos
 
-    def _get_info(self) -> dict:
+    def get_info(self) -> dict:
         GEBVs = self.simulator.GEBV_model(self.populations)
         return {"GEBV": GEBVs}
+
+    def set_attr(self, name, values):
+        return setattr(self, name, values)
 
 
 class _VecBreedingGym(VecBreedingGym):
@@ -197,9 +201,9 @@ class DistributedBreedingGym(AsyncVectorEnv):
         env_fns = [
             lambda: _VecBreedingGym(
                 envs_per_device,
-                device_id,
-                autoreset=False,
                 initial_population=germplasm,
+                device=device_id,
+                autoreset=False,
                 **kwargs
             )
             for device_id in device_ids

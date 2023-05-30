@@ -1,7 +1,7 @@
 from math import ceil, sqrt
 from typing import Callable, Optional, Tuple
 from breeding_gym.breeding_gym import BreedingGym
-from breeding_gym.simulator.typing import Population
+from chromax.typing import Population
 from breeding_gym.utils.index_functions import yield_index
 import gym
 from gym import spaces

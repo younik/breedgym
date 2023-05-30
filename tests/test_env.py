@@ -1,13 +1,14 @@
 import gym
 import numpy as np
 from breeding_gym.utils.paths import DATA_PATH
+from chromax.sample_data import genome, genetic_map
 import pytest
 
 
 def test_reset_population():
     env = gym.make("BreedingGym",
-                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
-                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+                   initial_population=genome,
+                   genetic_map=genetic_map,
                    )
 
     pop, _ = env.reset()
@@ -21,8 +22,8 @@ def test_reset_population():
 @pytest.mark.parametrize("n", [1, 5, 10])
 def test_num_progenies(n):
     env = gym.make("BreedingGym",
-                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
-                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+                   initial_population=genome,
+                   genetic_map=genetic_map,
                    )
     pop, _ = env.reset()
 
@@ -34,8 +35,8 @@ def test_num_progenies(n):
 
 def test_caching():
     env = gym.make("BreedingGym",
-                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
-                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+                   initial_population=genome,
+                   genetic_map=genetic_map,
                    )
     env.reset()
 
@@ -62,8 +63,8 @@ def test_caching():
 
 def test_reward_shaping():
     env = gym.make("BreedingGym",
-                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
-                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+                   initial_population=genome,
+                   genetic_map=genetic_map,
                    reward_shaping=False
                    )
 
@@ -83,8 +84,8 @@ def test_reward_shaping():
     assert truncated
 
     env2 = gym.make("BreedingGym",
-                    initial_population=DATA_PATH.joinpath("small_geno.txt"),
-                    genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+                    initial_population=genome,
+                    genetic_map=genetic_map,
                     reward_shaping=True
                     )
 
@@ -97,8 +98,8 @@ def test_reward_shaping():
 
 def test_deterministic():
     env = gym.make("BreedingGym",
-                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
-                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+                   initial_population=genome,
+                   genetic_map=genetic_map,
                    reward_shaping=False
                    )
 
@@ -119,4 +120,4 @@ def test_deterministic():
     for _ in range(10):
         _, r, _, _, _ = env.step(action)
 
-    assert abs(r - (-714.27819824)) < 1e-8
+    assert abs(r - (1.2193149)) < 1e-6

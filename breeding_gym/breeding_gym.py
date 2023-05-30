@@ -7,8 +7,8 @@ import jax
 from jaxtyping import Array, Float, Int
 import pandas as pd
 from pathlib import Path
-from breeding_gym.simulator import BreedingSimulator
-from breeding_gym.simulator.typing import Population
+from chromax import Simulator
+from chromax.typing import Population
 from breeding_gym.utils.paths import DATA_PATH
 from breeding_gym.utils.plot_utils import set_up_plt, NEURIPS_FONT_FAMILY
 import matplotlib.pyplot as plt
@@ -31,7 +31,7 @@ class BreedingGym(gym.Env):
         render_kwargs: dict = {},
         **kwargs
     ):
-        self.simulator = BreedingSimulator(**kwargs)
+        self.simulator = Simulator(**kwargs)
         if isinstance(initial_population, (str, Path)):
             germplasm = self.simulator.load_population(initial_population)
         else:

@@ -5,6 +5,7 @@ import numpy as np
 import jax
 from breeding_gym.vector.vec_wrappers import PairScores, SelectionValues
 import warnings
+from chromax.sample_data import genome, genetic_map
 
 
 def test_vec():
@@ -12,8 +13,8 @@ def test_vec():
     individual_per_gen = 200
     env = VecBreedingGym(
         n_envs=n_envs,
-        initial_population=DATA_PATH.joinpath("small_geno.txt"),
-        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+        initial_population=genome,
+        genetic_map=genetic_map,
         individual_per_gen=individual_per_gen
     )
 
@@ -34,7 +35,7 @@ def test_vec():
     assert isinstance(infos, dict)
     assert len(infos["GEBV"]) == n_envs
     for info in infos["GEBV"]:
-        assert info.shape == (individual_per_gen, 1)
+        assert info.shape == (individual_per_gen, 7)
 
 
 def test_selection_vec():
@@ -42,9 +43,10 @@ def test_selection_vec():
     individual_per_gen = 210
     env = VecBreedingGym(
         n_envs=n_envs,
-        initial_population=DATA_PATH.joinpath("small_geno.txt"),
-        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
-        individual_per_gen=individual_per_gen
+        initial_population=genome,
+        genetic_map=genetic_map,
+        individual_per_gen=individual_per_gen,
+        trait_names=["Yield"]
     )
     env = SelectionValues(env, k=10)
 
@@ -77,8 +79,8 @@ def test_distributed_env():
     env = DistributedBreedingGym(
         envs_per_device=envs_per_device,
         devices=local_devices,
-        initial_population=DATA_PATH.joinpath("small_geno.txt"),
-        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+        initial_population=genome,
+        genetic_map=genetic_map,
         individual_per_gen=individual_per_gen
     )
     n_envs = envs_per_device * len(local_devices)
@@ -115,8 +117,8 @@ def test_vec_deterministic():
     individual_per_gen = 200
     env = VecBreedingGym(
         n_envs=n_envs,
-        initial_population=DATA_PATH.joinpath("small_geno.txt"),
-        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+        initial_population=genome,
+        genetic_map=genetic_map,
         individual_per_gen=individual_per_gen
     )
 
@@ -128,7 +130,7 @@ def test_vec_deterministic():
         )
         pop, rews, _, _, _ = env.step(action)
 
-    expected_result = np.array([-505.67346, -1808.4503, -1688.9503, 1404.2659])
+    expected_result = np.array([11.627516, 10.363208, 12.290365, 10.221108])
     assert np.allclose(rews, expected_result)
 
 
@@ -137,9 +139,10 @@ def test_vec_gebv_policy():
     individual_per_gen = 200
     env = VecBreedingGym(
         n_envs=n_envs,
-        initial_population=DATA_PATH.joinpath("small_geno.txt"),
-        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
-        individual_per_gen=individual_per_gen
+        initial_population=genome,
+        genetic_map=genetic_map,
+        individual_per_gen=individual_per_gen,
+        trait_names=["Yield"]
     )
     env = SelectionValues(env, k=10)
 
@@ -147,7 +150,7 @@ def test_vec_gebv_policy():
     for _ in range(10):
         _, rews, _, _, infos = env.step(infos["GEBV"].squeeze())
 
-    expected_result = np.array([8954.3, 8987.394, 7257.9897, 7520.409])
+    expected_result = np.array([20.377941, 21.639626, 20.222626, 21.639626])
     assert np.allclose(rews, expected_result)
 
 
@@ -156,9 +159,10 @@ def test_vec_wrapper_n_crosses():
     individual_per_gen = 200
     env = VecBreedingGym(
         n_envs=n_envs,
-        initial_population=DATA_PATH.joinpath("small_geno.txt"),
-        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
-        individual_per_gen=individual_per_gen
+        initial_population=genome,
+        genetic_map=genetic_map,
+        individual_per_gen=individual_per_gen,
+        trait_names=["Yield"]
     )
 
     env = SelectionValues(env, k=10, n_crosses=20)
@@ -184,8 +188,8 @@ def test_vec_pair_score():
     individual_per_gen = 200
     env = VecBreedingGym(
         n_envs=n_envs,
-        initial_population=DATA_PATH.joinpath("small_geno.txt"),
-        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+        initial_population=genome,
+        genetic_map=genetic_map,
         individual_per_gen=individual_per_gen
     )
     env = PairScores(env)
@@ -196,5 +200,5 @@ def test_vec_pair_score():
         gebvs_matrix_sum = np.add.outer(gebvs, gebvs)
         _, rews, _, _, infos = env.step(gebvs_matrix_sum)
 
-    expected_result = np.array([2854.7405, 7821.8975, 379.87018, 244.54022])
+    expected_result = np.array([13.073561,  7.534841, 11.851914, 15.998689])
     assert np.allclose(rews, expected_result)

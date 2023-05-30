@@ -18,21 +18,29 @@ class GeneticDiversityWrapper(gym.Wrapper):
     def __init__(self, env):
         super().__init__(env)
 
+    def reset(self, seed=None, options=None):
+        obs, info = super().reset(seed=seed, options=options)
+        genetic_diversity = self.genetic_diversity(
+            self.simulator.GEBV_model, obs, mrk_axis=1
+        )
+        info["genetic_diversity"] = genetic_diversity
+        return obs, info
+
     def step(self, action):
         parents = self.population[action]
-        genetic_diversity = GeneticDiversityWrapper.genetic_diversity(
+        genetic_diversity = self.genetic_diversity(
             self.simulator.GEBV_model, parents, mrk_axis=2
         )
         obs, r, ter, tru, info = super().step(action)
         info["genetic_diversity"] = genetic_diversity
         return obs, r, ter, tru, info
 
-    def genetic_diversity(GEBV_model, population, mrk_axis=1):
+    def genetic_diversity(self, GEBV_model, population, mrk_axis=1):
         other_axis = (i for i in range(len(population.shape)) if i != mrk_axis)
         population = population.transpose(mrk_axis, *other_axis)
         population = population.reshape(1, population.shape[0], -1)
         max_GEBV = optimal_haploid_value(GEBV_model)(population)
-        neg_GEBV = GEBVModel(-GEBV_model.marker_effects, GEBV_model.chr_lens)
+        neg_GEBV = GEBVModel(-GEBV_model.marker_effects)
         min_GEBV = -optimal_haploid_value(neg_GEBV)(population)
         return (max_GEBV - min_GEBV).squeeze()
 
@@ -44,15 +52,15 @@ if __name__ == '__main__':
     n_crosses = 10
 
     trials = 50
-    names = ["standard", "OHV", "OPV"]
+    names = ["standard"] #, "OHV"]#, "OPV"]
     colors = ["b", "g", "r"]
 
     set_up_plt(NEURIPS_FONT_FAMILY, use_tex=False)
     fig, axs = plt.subplots(1, 2, figsize=(8, 4))
 
     env = gym.make("breeding_gym:BreedingGym",
-                   initial_population=DATA_PATH.joinpath("geno.txt"),
-                   genetic_map=DATA_PATH.joinpath("genetic_map.txt"),
+                   initial_population=DATA_PATH.joinpath("sample_full_pop_geno.txt"),
+                   genetic_map=DATA_PATH.joinpath("sample_with_r_genetic_map.txt"),
                    )
     env = GeneticDiversityWrapper(env)
     env = SimplifiedBreedingGym(env, individual_per_gen=individual_per_gen)
@@ -60,8 +68,8 @@ if __name__ == '__main__':
     GEBV_model = env.simulator.GEBV_model
     indices = [
         yield_index(GEBV_model),
-        optimal_haploid_value(GEBV_model, F=0.7, B=12),
-        optimal_population_value(GEBV_model, n_bests, F=0.4, B=12)
+        optimal_haploid_value(GEBV_model, F=0.7, B=12, chr_lens=env.simulator.chr_lens),
+        optimal_population_value(GEBV_model, n_bests, F=0.4, B=12, chr_lens=env.simulator.chr_lens)
     ]
 
     start_time = time.time()
@@ -72,20 +80,17 @@ if __name__ == '__main__':
         for trial_idx in range(trials):
             obs, info = env.reset(options={"index": index})
             buffer_gg[trial_idx, 0] = env.GEBV.mean()
-
-            genetic_div_pop = GeneticDiversityWrapper.genetic_diversity(
-                GEBV_model, env.population, mrk_axis=1
-            )
-            buffer_g_div[trial_idx, 0] = genetic_div_pop
+            buffer_g_div[trial_idx, 0] = info["genetic_diversity"]
 
             print(f"{label}, trial {trial_idx}", flush=True)
             for i in range(num_generations):
                 action = {"n_bests": n_bests, "n_crosses": n_crosses}
                 obs, r, terminated, truncated, info = env.step(action)
                 buffer_gg[trial_idx, i + 1] = env.GEBV.mean()
-                buffer_g_div[trial_idx, i] = info["genetic_diversity"]
+                buffer_g_div[trial_idx, i + 1] = info["genetic_diversity"]
 
-        gg = np.mean(buffer_gg, axis=0)
+        buffer_gg = (buffer_gg - buffer_gg[:, 0][:, None]) / env.simulator.max_gebv * 100
+        gg = np.mean(buffer_gg, axis=0) 
         gg_stderr = np.std(buffer_gg, axis=0, ddof=1) / np.sqrt(trials)
         buffer_g_div /= (env.simulator.max_gebv - env.simulator.min_gebv)
         buffer_g_div *= 100
@@ -95,12 +100,11 @@ if __name__ == '__main__':
         xticks = np.arange(num_generations + 1)
 
         axs[0].set_xticks(xticks)
-        axs[0].set_title("Genetic Gain")
+        axs[0].set_title("Genetic Gain (%)")
         axs[0].grid(axis='y')
         axs[0].set_xlabel('Generations [Years]')
-        y = gg - gg[0]
-        axs[0].plot(xticks, y, label=label)
-        axs[0].fill_between(xticks, y-gg_stderr, y+gg_stderr, alpha=0.2)
+        axs[0].plot(xticks, gg, label=label)
+        axs[0].fill_between(xticks, gg-gg_stderr, gg+gg_stderr, alpha=0.2)
 
         axs[1].set_xticks(xticks)
         axs[1].set_title("Genetic Diversity")
@@ -112,5 +116,5 @@ if __name__ == '__main__':
 
     print("Elapsed time", time.time() - start_time, flush=True)
     plt.figlegend(loc='upper right')
-    plt.savefig(f"figures/compare_indexes_1m_{trials}t_changedOPV.png")
+    plt.savefig(f"figures/test_baseline.png")
     plt.show()

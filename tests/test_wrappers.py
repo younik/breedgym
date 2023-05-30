@@ -2,14 +2,15 @@ import gym
 from breeding_gym.utils.paths import DATA_PATH
 import pytest
 import numpy as np
+from chromax.sample_data import genome, genetic_map
 
 
 def test_simplified_env():
     individual_per_gen = 200
     env = gym.make("SimplifiedBreedingGym",
                    individual_per_gen=individual_per_gen,
-                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
-                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+                   initial_population=genome,
+                   genetic_map=genetic_map,
                    )
 
     obs, _ = env.reset()
@@ -46,8 +47,8 @@ def test_kbest_env():
     individual_per_gen = 200
     env = gym.make("KBestBreedingGym",
                    individual_per_gen=individual_per_gen,
-                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
-                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+                   initial_population=genome,
+                   genetic_map=genetic_map,
                    )
     obs, _ = env.reset()
     assert len(obs["GEBV"]) == individual_per_gen
@@ -72,8 +73,9 @@ def test_gebv_policy():
     individual_per_gen = 200
     env = gym.make("KBestBreedingGym",
                    individual_per_gen=individual_per_gen,
-                   initial_population=DATA_PATH.joinpath("small_geno.txt"),
-                   genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
+                   initial_population=genome,
+                   genetic_map=genetic_map,
+                   trait_names=["Yield"]
                    )
     env.reset(seed=7)
     action = 10
@@ -81,4 +83,4 @@ def test_gebv_policy():
     for _ in range(10):
         _, r, _, _, _ = env.step(action)
 
-    assert abs(r - 8035.5464) < 1e-4
+    assert abs(r - 20.447344) < 1e-6

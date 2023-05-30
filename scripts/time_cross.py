@@ -10,7 +10,7 @@ import pandas as pd
 
 
 n_progenies = [300]
-data_sizes = ["small", "medium"]
+data_sizes = ["big"]
 
 n_markers = {
     "small": 10_000,
@@ -24,7 +24,7 @@ dataset = {
     "big": "genetic_map.txt"
 }
 
-repeats = 50
+repeats = 25
 
 
 table = np.empty((len(n_progenies), len(data_sizes)))
