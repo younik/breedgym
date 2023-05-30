@@ -56,7 +56,6 @@ class VecBreedingGym(VectorEnv):
         if isinstance(initial_population, (str, Path)):
             germplasm = self.simulator.load_population(initial_population)
 
-        import pdb; pdb.set_trace()
         self.germplasm = jax.device_put(germplasm, device=self.device)
         if individual_per_gen is None:
             individual_per_gen = len(self.germplasm)
