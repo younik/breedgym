@@ -1,5 +1,5 @@
 import jax
-import gym
+import gymnasium as gym
 from breeding_gym.utils.paths import DATA_PATH
 
 

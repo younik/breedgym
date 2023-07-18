@@ -1,5 +1,5 @@
-from gym.vector import VectorEnvWrapper
-from gym import spaces
+from gymnasium.experimental.vector import VectorWrapper
+from gymnasium import spaces
 from breeding_gym.vector import VecBreedingGym
 import numpy as np
 import jax
@@ -7,7 +7,7 @@ from functools import partial
 import jax.numpy as jnp
 
 
-class WheatBreedingGym(VectorEnvWrapper):
+class WheatBreedingGym(VectorWrapper):
     
     def __init__(self, vec_env: VecBreedingGym, n_lines=200, plant_per_line=100, k_per_line=5):
         super().__init__(vec_env)
@@ -20,7 +20,7 @@ class WheatBreedingGym(VectorEnvWrapper):
         )
 
         self.action_space = spaces.Box(
-            -1e5, 1e5, shape=(self.n_envs, *action_shape)
+            -1e5, 1e5, shape=(self.num_envs, *action_shape)
         )
 
     @partial(jax.vmap, in_axes=(None, 0))
@@ -40,9 +40,6 @@ class WheatBreedingGym(VectorEnvWrapper):
             total_repeat_length=self.n_lines
         )
 
-    def step_async(self, actions):
-        self._actions = self._convert_actions(actions)
-
     @partial(jax.vmap, in_axes=(None, 0))
     def _double_haploid(self, pop):
         return self.simulator.double_haploid(pop, n_offspring=self.plant_per_line)
@@ -51,9 +48,10 @@ class WheatBreedingGym(VectorEnvWrapper):
     def _select_line(self, pop):
         return self.simulator.select(pop, k=self.k_per_line)
 
-    def step_wait(self):
-        arange_envs = np.arange(self.n_envs)[:, None, None]
-        parents = self.populations[arange_envs, self._actions]
+    def step(self, actions):
+        actions = self._convert_actions(actions)
+        arange_envs = np.arange(self.num_envs)[:, None, None]
+        parents = self.populations[arange_envs, actions]
         pop = self.cross(parents)
         assert pop.shape[1] == self.n_lines
         pop = self._double_haploid(pop)
@@ -73,6 +71,6 @@ class WheatBreedingGym(VectorEnvWrapper):
         if done and self.autoreset:
             self.reset()
 
-        terminated = np.full(self.n_envs, False)
-        truncated = np.full(self.n_envs, done)
+        terminated = np.full(self.num_envs, False)
+        truncated = np.full(self.num_envs, done)
         return self.populations, rews, terminated, truncated, infos

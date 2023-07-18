@@ -1,15 +1,17 @@
-from typing import Optional
-from gym.vector.vector_env import VectorEnvWrapper
-from gym import spaces
+from typing import Optional, Tuple
+from math import prod
+from functools import partial
+from gymnasium.experimental.vector import VectorWrapper
+from gymnasium import spaces
 import jax
 import jax.numpy as jnp
-from jaxtyping import Array, Float, Int
-from functools import partial
+from jaxtyping import Array, Bool, Float, Int
 from breeding_gym.vector import VecBreedingGym
-from math import prod
+from chromax.typing import Population
 
 
-class SelectionValues(VectorEnvWrapper):
+
+class SelectionValues(VectorWrapper):
 
     def __init__(
         self,
@@ -74,14 +76,14 @@ class SelectionValues(VectorEnvWrapper):
             total_repeat_length=self.individual_per_gen
         )
 
-    def step_async(self, actions: Float[Array, "envs n"]):
-        random_keys = jax.random.split(self.random_key, num=self.num_envs + 1)
-        self.random_key = random_keys[0]
+    def step(self, actions: Float[Array, "envs n"]):
+        random_keys = jax.random.split(self.random_key, num=self.n_envs + 1)
+        self.env.random_key = random_keys[0]
         low_level_actions = self._convert_actions(actions, random_keys[1:])
-        super().step_async(low_level_actions)
+        return super().step(low_level_actions)
 
 
-class PairScores(VectorEnvWrapper):
+class PairScores(VectorWrapper):
 
     def __init__(self, vec_env: VecBreedingGym):
         super().__init__(vec_env)
@@ -113,12 +115,21 @@ class PairScores(VectorEnvWrapper):
             total_repeat_length=self.n_crosses
         )
 
-    def step_async(self, actions: Float[Array, "envs n n"]):
+    def step(
+        self,
+        actions: Float[Array, "envs n n"]
+    ) -> Tuple[
+        Population["envs n"],
+        Float[Array, "envs"],
+        Bool[Array, "envs"],
+        Bool[Array, "envs"],
+        dict
+    ]:
         low_level_actions = self._convert_actions(actions)
-        super().step_async(low_level_actions)
+        return super().step(low_level_actions)
 
 
-class RavelIndex(VectorEnvWrapper):
+class RavelIndex(VectorWrapper):
 
     def __init__(self, vec_env: VecBreedingGym):
         super().__init__(vec_env)
@@ -138,6 +149,15 @@ class RavelIndex(VectorEnvWrapper):
         indices = jnp.unravel_index(action, self.action_shape)
         return jnp.stack(indices, axis=1)
 
-    def step_async(self, actions):
+    def step(
+        self,
+        actions: Float[Array, "envs n"]
+    ) -> Tuple[
+        Population["envs n"],
+        Float[Array, "envs"],
+        Bool[Array, "envs"],
+        Bool[Array, "envs"],
+        dict
+    ]:
         actions = self._convert_actions(actions)
-        return super().step_async(actions)
+        return super().step(actions)

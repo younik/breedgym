@@ -1,5 +1,4 @@
-import gym
-from breeding_gym.utils.paths import DATA_PATH
+import gymnasium as gym
 import pytest
 import numpy as np
 from chromax.sample_data import genome, genetic_map
@@ -83,4 +82,4 @@ def test_gebv_policy():
     for _ in range(10):
         _, r, _, _, _ = env.step(action)
 
-    assert abs(r - 20.447344) < 1e-6
+    assert abs(r - 20.315035) < 1e-6

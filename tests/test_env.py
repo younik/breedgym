@@ -1,6 +1,5 @@
-import gym
+import gymnasium as gym
 import numpy as np
-from breeding_gym.utils.paths import DATA_PATH
 from chromax.sample_data import genome, genetic_map
 import pytest
 
@@ -120,4 +119,4 @@ def test_deterministic():
     for _ in range(10):
         _, r, _, _, _ = env.step(action)
 
-    assert abs(r - (1.2193149)) < 1e-6
+    assert abs(r - (1.6602371)) < 1e-6

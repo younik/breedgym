@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 import breeding_gym  # noqa
 import numpy as np
 from breeding_gym.utils.index_functions import (

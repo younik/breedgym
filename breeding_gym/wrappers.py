@@ -3,8 +3,8 @@ from typing import Callable, Optional, Tuple
 from breeding_gym.breeding_gym import BreedingGym
 from chromax.typing import Population
 from breeding_gym.utils.index_functions import yield_index
-import gym
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
 import numpy as np
 import jax
 import jax.numpy as jnp

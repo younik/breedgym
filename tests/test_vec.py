@@ -1,5 +1,4 @@
 import pytest
-from breeding_gym.utils.paths import DATA_PATH
 from breeding_gym.vector.vec_env import DistributedBreedingGym, VecBreedingGym
 import numpy as np
 import jax
@@ -130,7 +129,7 @@ def test_vec_deterministic():
         )
         pop, rews, _, _, _ = env.step(action)
 
-    expected_result = np.array([11.627516, 10.363208, 12.290365, 10.221108])
+    expected_result = np.array([11.618341, 11.29245, 13.47926, 10.03809])
     assert np.allclose(rews, expected_result)
 
 
@@ -150,7 +149,7 @@ def test_vec_gebv_policy():
     for _ in range(10):
         _, rews, _, _, infos = env.step(infos["GEBV"].squeeze())
 
-    expected_result = np.array([20.377941, 21.639626, 20.222626, 21.639626])
+    expected_result = np.array([20.43854, 21.59488, 20.503202, 21.617622])
     assert np.allclose(rews, expected_result)
 
 
@@ -200,5 +199,5 @@ def test_vec_pair_score():
         gebvs_matrix_sum = np.add.outer(gebvs, gebvs)
         _, rews, _, _, infos = env.step(gebvs_matrix_sum)
 
-    expected_result = np.array([13.073561,  7.534841, 11.851914, 15.998689])
+    expected_result = np.array([13.162314, 10.155096, 12.45827, 12.093216])
     assert np.allclose(rews, expected_result)

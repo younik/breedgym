@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 import numpy as np
 import time
 from breeding_gym.simulator.gebv_model import GEBVModel
