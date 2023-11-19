@@ -7,3 +7,7 @@ __pycache__/
 data.ipynb
 venv
 launch.sh
+breedgym/data/medium_genetic_map.txt
+breedgym/data/medium_geno.npy
+breedgym/data/geno.txt
+breedgym/data/big_geno.txt
