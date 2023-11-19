@@ -1,8 +1,8 @@
 from math import ceil, sqrt
 from typing import Callable, Optional, Tuple
-from breeding_gym.breeding_gym import BreedingGym
+from breedgym.breedgym import BreedGym
 from chromax.typing import Population
-from breeding_gym.utils.index_functions import yield_index
+from breedgym.utils.index_functions import yield_index
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
@@ -11,19 +11,19 @@ import jax.numpy as jnp
 from jaxtyping import Array, Float
 
 
-class SimplifiedBreedingGym(gym.Wrapper):
+class SimplifiedBreedGym(gym.Wrapper):
 
-    metadata = BreedingGym.metadata
+    metadata = BreedGym.metadata
 
     def __init__(
         self,
-        env: Optional[BreedingGym] = None,
+        env: Optional[BreedGym] = None,
         individual_per_gen: int = 2250,
         f_index: None | Callable[[Population["n"]], Float[Array, "n"]] = None,
         **kwargs
     ):
         if env is None:
-            env = BreedingGym(**kwargs)
+            env = BreedGym(**kwargs)
         super().__init__(env)
 
         if f_index is None:
@@ -101,7 +101,7 @@ class SimplifiedBreedingGym(gym.Wrapper):
         return jnp.dot(monoploidy, mean_ind) / norms
 
     def _simplified_obs(self) -> dict:
-        norm_corr = SimplifiedBreedingGym._correlation(self.population)
+        norm_corr = SimplifiedBreedGym._correlation(self.population)
         norm_yield = self.GEBV["Yield"].to_numpy()
         return {
             "GEBV": norm_yield,
@@ -109,7 +109,7 @@ class SimplifiedBreedingGym(gym.Wrapper):
         }
 
 
-class KBestBreedingGym(SimplifiedBreedingGym):
+class KBestBreedGym(SimplifiedBreedGym):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

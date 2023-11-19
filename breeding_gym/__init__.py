@@ -1,16 +1,16 @@
 from gymnasium.envs.registration import register
 
 register(
-    id='BreedingGym',
-    entry_point='breeding_gym.breeding_gym:BreedingGym',
+    id='BreedGym',
+    entry_point='breedgym.breedgym:BreedGym',
 )
 
 register(
-    id='SimplifiedBreedingGym',
-    entry_point='breeding_gym.wrappers:SimplifiedBreedingGym',
+    id='SimplifiedBreedGym',
+    entry_point='breedgym.wrappers:SimplifiedBreedGym',
 )
 
 register(
-    id='KBestBreedingGym',
-    entry_point='breeding_gym.wrappers:KBestBreedingGym',
+    id='KBestBreedGym',
+    entry_point='breedgym.wrappers:KBestBreedGym',
 )

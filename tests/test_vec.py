@@ -1,8 +1,8 @@
 import pytest
-from breeding_gym.vector.vec_env import DistributedBreedingGym, VecBreedingGym
+from breedgym.vector.vec_env import DistributedBreedGym, VecBreedGym
 import numpy as np
 import jax
-from breeding_gym.vector.vec_wrappers import PairScores, SelectionValues
+from breedgym.vector.vec_wrappers import PairScores, SelectionValues
 import warnings
 from chromax.sample_data import genome, genetic_map
 
@@ -10,7 +10,7 @@ from chromax.sample_data import genome, genetic_map
 def test_vec():
     n_envs = 8
     individual_per_gen = 200
-    env = VecBreedingGym(
+    env = VecBreedGym(
         n_envs=n_envs,
         initial_population=genome,
         genetic_map=genetic_map,
@@ -40,7 +40,7 @@ def test_vec():
 def test_selection_vec():
     n_envs = 8
     individual_per_gen = 210
-    env = VecBreedingGym(
+    env = VecBreedGym(
         n_envs=n_envs,
         initial_population=genome,
         genetic_map=genetic_map,
@@ -75,7 +75,7 @@ def test_distributed_env():
 
     envs_per_device = 4
     individual_per_gen = 200
-    env = DistributedBreedingGym(
+    env = DistributedBreedGym(
         envs_per_device=envs_per_device,
         devices=local_devices,
         initial_population=genome,
@@ -114,7 +114,7 @@ def test_distributed_env():
 def test_vec_deterministic():
     n_envs = 4
     individual_per_gen = 200
-    env = VecBreedingGym(
+    env = VecBreedGym(
         n_envs=n_envs,
         initial_population=genome,
         genetic_map=genetic_map,
@@ -136,7 +136,7 @@ def test_vec_deterministic():
 def test_vec_gebv_policy():
     n_envs = 4
     individual_per_gen = 200
-    env = VecBreedingGym(
+    env = VecBreedGym(
         n_envs=n_envs,
         initial_population=genome,
         genetic_map=genetic_map,
@@ -156,7 +156,7 @@ def test_vec_gebv_policy():
 def test_vec_wrapper_n_crosses():
     n_envs = 4
     individual_per_gen = 200
-    env = VecBreedingGym(
+    env = VecBreedGym(
         n_envs=n_envs,
         initial_population=genome,
         genetic_map=genetic_map,
@@ -185,7 +185,7 @@ def test_vec_wrapper_n_crosses():
 def test_vec_pair_score():
     n_envs = 4
     individual_per_gen = 200
-    env = VecBreedingGym(
+    env = VecBreedGym(
         n_envs=n_envs,
         initial_population=genome,
         genetic_map=genetic_map,

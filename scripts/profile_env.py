@@ -1,9 +1,9 @@
 import jax
 import gymnasium as gym
-from breeding_gym.utils.paths import DATA_PATH
+from breedgym.utils.paths import DATA_PATH
 
 
-env = gym.make("KBestBreedingGym",
+env = gym.make("KBestBreedGym",
                individual_per_gen=200,
                initial_population=DATA_PATH.joinpath("small_geno.txt"),
                genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),

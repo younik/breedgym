@@ -1,5 +1,5 @@
 import gymnasium as gym
-from breeding_gym.utils.paths import DATA_PATH
+from breedgym.utils.paths import DATA_PATH
 import numpy as np
 
 
@@ -8,7 +8,7 @@ if __name__ == '__main__':
     trials = 100
     #actions = [10] * 10 
 
-    env = gym.make("breeding_gym:SimplifiedBreedingGym",
+    env = gym.make("breedgym:SimplifiedBreedGym",
                    initial_population=DATA_PATH.joinpath("small_const_chr_geno.txt"),
                    genetic_map=DATA_PATH.joinpath("small_const_chr_genetic_map.txt"),
                    individual_per_gen=individual_per_gen,

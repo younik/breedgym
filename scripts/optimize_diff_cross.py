@@ -1,8 +1,8 @@
 import jax
 import jax.numpy as jnp
 import numpy as np
-from breeding_gym.simulator.simulator import BreedingSimulator
-from breeding_gym.utils.paths import DATA_PATH
+from breedgym.simulator.simulator import BreedingSimulator
+from breedgym.utils.paths import DATA_PATH
 import matplotlib.pyplot as plt
 import optax
 

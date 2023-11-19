@@ -1,11 +1,11 @@
 import gymnasium as gym
-import breeding_gym  # noqa
+import breedgym  # noqa
 import numpy as np
-from breeding_gym.utils.index_functions import (
+from breedgym.utils.index_functions import (
     optimal_haploid_value,
     yield_index
 )
-from breeding_gym.utils.paths import DATA_PATH
+from breedgym.utils.paths import DATA_PATH
 
 if __name__ == '__main__':
     num_generations = 10
@@ -14,7 +14,7 @@ if __name__ == '__main__':
     ]
     episode_names = [f"{b} bests" for b in bests]
 
-    env = gym.make("SimplifiedBreedingGym",
+    env = gym.make("SimplifiedBreedGym",
                    individual_per_gen=200,
                    initial_population=DATA_PATH.joinpath("medium_geno.txt"),
                    genetic_map=DATA_PATH.joinpath("medium_genetic_map.txt"),

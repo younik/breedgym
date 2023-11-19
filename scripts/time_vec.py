@@ -3,15 +3,15 @@ import timeit
 import numpy as np
 import pandas as pd
 from functools import partial
-from breeding_gym.breeding_gym import BreedingGym
-from breeding_gym.utils.paths import DATA_PATH
-from breeding_gym.vector.vec_env import VecBreedingGym, DistributedBreedingGym
+from breedgym.breedgym import BreedGym
+from breedgym.utils.paths import DATA_PATH
+from breedgym.vector.vec_env import VecBreedGym, DistributedBreedGym
 from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
 import jax
 
 
 def make_jax_vec(n_env):
-    env = VecBreedingGym(
+    env = VecBreedGym(
         n_envs=n_env,
         initial_population=DATA_PATH.joinpath("small_geno.txt"),
         genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
@@ -21,7 +21,7 @@ def make_jax_vec(n_env):
 
 
 def make_distributed_vec(n_env):
-    env = DistributedBreedingGym(
+    env = DistributedBreedGym(
         envs_per_device=n_env // jax.local_device_count(),
         initial_population=DATA_PATH.joinpath("small_geno.txt"),
         genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
@@ -32,7 +32,7 @@ def make_distributed_vec(n_env):
 
 def make_async_vec(n_env):
     def make_env():
-        env = BreedingGym(
+        env = BreedGym(
             initial_population=DATA_PATH.joinpath("small_geno.txt"),
             genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
         )

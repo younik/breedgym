@@ -1,16 +1,16 @@
 import gymnasium as gym
 import numpy as np
 import time
-from breeding_gym.simulator.gebv_model import GEBVModel
-from breeding_gym.utils.index_functions import (
+from breedgym.simulator.gebv_model import GEBVModel
+from breedgym.utils.index_functions import (
     optimal_haploid_value,
     optimal_population_value,
     yield_index
 )
-from breeding_gym.utils.paths import DATA_PATH
+from breedgym.utils.paths import DATA_PATH
 import matplotlib.pyplot as plt
-from breeding_gym.utils.plot_utils import NEURIPS_FONT_FAMILY, set_up_plt
-from breeding_gym.wrappers import SimplifiedBreedingGym
+from breedgym.utils.plot_utils import NEURIPS_FONT_FAMILY, set_up_plt
+from breedgym.wrappers import SimplifiedBreedGym
 
 
 class GeneticDiversityWrapper(gym.Wrapper):
@@ -58,12 +58,12 @@ if __name__ == '__main__':
     set_up_plt(NEURIPS_FONT_FAMILY, use_tex=False)
     fig, axs = plt.subplots(1, 2, figsize=(8, 4))
 
-    env = gym.make("breeding_gym:BreedingGym",
+    env = gym.make("breedgym:BreedGym",
                    initial_population=DATA_PATH.joinpath("sample_full_pop_geno.txt"),
                    genetic_map=DATA_PATH.joinpath("sample_with_r_genetic_map.txt"),
                    )
     env = GeneticDiversityWrapper(env)
-    env = SimplifiedBreedingGym(env, individual_per_gen=individual_per_gen)
+    env = SimplifiedBreedGym(env, individual_per_gen=individual_per_gen)
 
     GEBV_model = env.simulator.GEBV_model
     indices = [

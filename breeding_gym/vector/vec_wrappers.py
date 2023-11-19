@@ -6,7 +6,7 @@ from gymnasium import spaces
 import jax
 import jax.numpy as jnp
 from jaxtyping import Array, Bool, Float, Int
-from breeding_gym.vector import VecBreedingGym
+from breedgym.vector import VecBreedGym
 from chromax.typing import Population
 
 
@@ -15,7 +15,7 @@ class SelectionValues(VectorWrapper):
 
     def __init__(
         self,
-        vec_env: VecBreedingGym,
+        vec_env: VecBreedGym,
         k: int,
         n_crosses: Optional[int] = None
     ):
@@ -85,7 +85,7 @@ class SelectionValues(VectorWrapper):
 
 class PairScores(VectorWrapper):
 
-    def __init__(self, vec_env: VecBreedingGym):
+    def __init__(self, vec_env: VecBreedGym):
         super().__init__(vec_env)
 
         self.n_crosses = self.individual_per_gen
@@ -131,7 +131,7 @@ class PairScores(VectorWrapper):
 
 class RavelIndex(VectorWrapper):
 
-    def __init__(self, vec_env: VecBreedingGym):
+    def __init__(self, vec_env: VecBreedGym):
         super().__init__(vec_env)
         self.action_shape = self.single_action_space.shape
         n_elems = prod(self.action_shape)

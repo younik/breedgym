@@ -11,10 +11,10 @@ install_requires = [
 
 
 setuptools.setup(
-    name='breeding_gym',
+    name='breedgym',
     version='0.0.1a',
     description='Gym environment for breeding simulation',
-    url='https://gitlab.inf.ethz.ch/lucac/breedinggym',
+    url='https://gitlab.inf.ethz.ch/lucac/breedgym',
     author='Omar Younis, Luca Corinzia, Matteo Turchetta',
     author_email='omargallalaly.younis@inf.ethz.ch',
     keywords='Plant breeding simulator for Reinforcement Learning',

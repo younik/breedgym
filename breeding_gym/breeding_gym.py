@@ -9,8 +9,8 @@ import pandas as pd
 from pathlib import Path
 from chromax import Simulator
 from chromax.typing import Population
-from breeding_gym.utils.paths import DATA_PATH
-from breeding_gym.utils.plot_utils import set_up_plt, NEURIPS_FONT_FAMILY
+from breedgym.utils.paths import DATA_PATH
+from breedgym.utils.plot_utils import set_up_plt, NEURIPS_FONT_FAMILY
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
@@ -18,7 +18,7 @@ import matplotlib.patches as mpatches
 GENOME_FILE = DATA_PATH.joinpath("geno.txt")
 
 
-class BreedingGym(gym.Env):
+class BreedGym(gym.Env):
 
     metadata = {"render_modes": ["matplotlib"], "render_fps": 1}
 

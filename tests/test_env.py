@@ -5,7 +5,7 @@ import pytest
 
 
 def test_reset_population():
-    env = gym.make("BreedingGym",
+    env = gym.make("BreedGym",
                    initial_population=genome,
                    genetic_map=genetic_map,
                    )
@@ -20,7 +20,7 @@ def test_reset_population():
 
 @pytest.mark.parametrize("n", [1, 5, 10])
 def test_num_progenies(n):
-    env = gym.make("BreedingGym",
+    env = gym.make("BreedGym",
                    initial_population=genome,
                    genetic_map=genetic_map,
                    )
@@ -33,7 +33,7 @@ def test_num_progenies(n):
 
 
 def test_caching():
-    env = gym.make("BreedingGym",
+    env = gym.make("BreedGym",
                    initial_population=genome,
                    genetic_map=genetic_map,
                    )
@@ -61,7 +61,7 @@ def test_caching():
 
 
 def test_reward_shaping():
-    env = gym.make("BreedingGym",
+    env = gym.make("BreedGym",
                    initial_population=genome,
                    genetic_map=genetic_map,
                    reward_shaping=False
@@ -82,7 +82,7 @@ def test_reward_shaping():
     assert reward != 0
     assert truncated
 
-    env2 = gym.make("BreedingGym",
+    env2 = gym.make("BreedGym",
                     initial_population=genome,
                     genetic_map=genetic_map,
                     reward_shaping=True
@@ -96,7 +96,7 @@ def test_reward_shaping():
 
 
 def test_deterministic():
-    env = gym.make("BreedingGym",
+    env = gym.make("BreedGym",
                    initial_population=genome,
                    genetic_map=genetic_map,
                    reward_shaping=False

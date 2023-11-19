@@ -1,4 +1,4 @@
-# BreedingGym
+# BreedGym
 
 ## Installation
 
@@ -7,15 +7,15 @@ We recommend Python 3.8+ installation using [Anaconda](https://www.anaconda.com/
 First, create and activate a virtual environment using Anaconda:
 
 ```bash
-conda create -yn breedinggym python=3.8
-conda activate breedinggym
+conda create -yn breedgym python=3.8
+conda activate breedgym
 ```
 
 Then, clone the repo and change working directory
 
 ```bash
-git clone https://gitlab.inf.ethz.ch/lucac/breedinggym
-cd breedinggym
+git clone https://gitlab.inf.ethz.ch/lucac/breedgym
+cd breedgym
 ```
 
 Subsequently, install the library according to your needs.

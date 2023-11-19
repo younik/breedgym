@@ -1,5 +1,5 @@
-from .vec_env import VecBreedingGym
+from .vec_env import VecBreedGym
 from .vec_wrappers import SelectionValues, PairScores, RavelIndex
-from .breeding_programs_env import WheatBreedingGym
+from .breeding_programs_env import WheatBreedGym
 
-__all__ = ["VecBreedingGym", "SelectionValues", "PairScores", "RavelIndex", "WheatBreedingGym"]
+__all__ = ["VecBreedGym", "SelectionValues", "PairScores", "RavelIndex", "WheatBreedGym"]

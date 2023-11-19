@@ -1,15 +1,15 @@
 from gymnasium.experimental.vector import VectorWrapper
 from gymnasium import spaces
-from breeding_gym.vector import VecBreedingGym
+from breedgym.vector import VecBreedGym
 import numpy as np
 import jax
 from functools import partial
 import jax.numpy as jnp
 
 
-class WheatBreedingGym(VectorWrapper):
+class WheatBreedGym(VectorWrapper):
     
-    def __init__(self, vec_env: VecBreedingGym, n_lines=200, plant_per_line=100, k_per_line=5):
+    def __init__(self, vec_env: VecBreedGym, n_lines=200, plant_per_line=100, k_per_line=5):
         super().__init__(vec_env)
         self.n_lines = n_lines
         self.plant_per_line = plant_per_line

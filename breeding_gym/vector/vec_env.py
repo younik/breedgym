@@ -11,7 +11,7 @@ from jaxtyping import Array, Bool, Float, Int
 import numpy as np
 from chromax import Simulator
 from chromax.typing import Population, Parents
-from breeding_gym.utils.paths import DATA_PATH
+from breedgym.utils.paths import DATA_PATH
 
 
 GENOME_FILE = DATA_PATH.joinpath("geno.txt")
@@ -32,7 +32,7 @@ def _random_selection(
     )
 
 
-class VecBreedingGym(VectorEnv):
+class VecBreedGym(VectorEnv):
 
     def __init__(
         self,
@@ -148,7 +148,7 @@ class VecBreedingGym(VectorEnv):
         return setattr(self, name, values)
 
 
-class _VecBreedingGym(VecBreedingGym):
+class _VecBreedGym(VecBreedGym):
 
     def step(self, action) -> Tuple[
         Population["envs n"],
@@ -163,7 +163,7 @@ class _VecBreedingGym(VecBreedingGym):
         return obs, rews, ter[0], tru[0], infos
 
 
-class DistributedBreedingGym(AsyncVectorEnv):
+class DistributedBreedGym(AsyncVectorEnv):
 
     def __init__(
         self,
@@ -177,7 +177,7 @@ class DistributedBreedingGym(AsyncVectorEnv):
         self.devices = devices
         self.envs_per_device = envs_per_device
 
-        dummy_env = VecBreedingGym(
+        dummy_env = VecBreedGym(
             1,
             device=None,
             initial_population=initial_population,
@@ -190,7 +190,7 @@ class DistributedBreedingGym(AsyncVectorEnv):
 
         device_ids = [device.id for device in self.devices]
         env_fns = [
-            lambda: _VecBreedingGym(
+            lambda: _VecBreedGym(
                 envs_per_device,
                 initial_population=germplasm,
                 device=device_id,

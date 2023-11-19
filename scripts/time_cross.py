@@ -1,6 +1,6 @@
-from breeding_gym.simulator import BreedingSimulator
+from breedgym.simulator import BreedingSimulator
 import numpy as np
-from breeding_gym.utils.paths import DATA_PATH
+from breedgym.utils.paths import DATA_PATH
 import timeit
 import pandas as pd
 
