@@ -66,7 +66,7 @@ class WheatBreedGym(VectorWrapper):
             rews = np.max(infos["GEBV"], axis=(1, 2))
             rews = np.asarray(rews)
         else:
-            rews = np.zeros(self.n_envs)
+            rews = np.zeros(self.num_envs)
 
         if done and self.autoreset:
             self.reset()

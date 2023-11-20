@@ -4,6 +4,7 @@ install_requires = [
     'numpy',
     'pandas',
     'matplotlib',
+    'chromax',
     'gymnasium>=0.29',
     'jax',
     'jaxtyping'

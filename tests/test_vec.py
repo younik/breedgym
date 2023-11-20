@@ -8,40 +8,40 @@ from chromax.sample_data import genome, genetic_map
 
 
 def test_vec():
-    n_envs = 8
+    num_envs = 8
     individual_per_gen = 200
     env = VecBreedGym(
-        n_envs=n_envs,
+        num_envs=num_envs,
         initial_population=genome,
         genetic_map=genetic_map,
         individual_per_gen=individual_per_gen
     )
 
     pop, _ = env.reset()
-    expected_shape = (n_envs, individual_per_gen, env.simulator.n_markers, 2)
+    expected_shape = (num_envs, individual_per_gen, env.simulator.n_markers, 2)
     assert pop.shape == expected_shape
 
     actions = np.random.randint(
         0, individual_per_gen,
-        size=(n_envs, individual_per_gen, 2)
+        size=(num_envs, individual_per_gen, 2)
     )
     new_pop, reward, terminated, truncated, infos = env.step(actions)
 
     assert new_pop.shape == expected_shape
-    assert reward.shape == (n_envs,)
+    assert reward.shape == (num_envs,)
     assert np.all(~terminated)
     assert np.all(~truncated)
     assert isinstance(infos, dict)
-    assert len(infos["GEBV"]) == n_envs
+    assert len(infos["GEBV"]) == num_envs
     for info in infos["GEBV"]:
         assert info.shape == (individual_per_gen, 7)
 
 
 def test_selection_vec():
-    n_envs = 8
+    num_envs = 8
     individual_per_gen = 210
     env = VecBreedGym(
-        n_envs=n_envs,
+        num_envs=num_envs,
         initial_population=genome,
         genetic_map=genetic_map,
         individual_per_gen=individual_per_gen,
@@ -50,17 +50,17 @@ def test_selection_vec():
     env = SelectionValues(env, k=10)
 
     pop, _ = env.reset()
-    expected_shape = (n_envs, individual_per_gen, env.simulator.n_markers, 2)
+    expected_shape = (num_envs, individual_per_gen, env.simulator.n_markers, 2)
     assert pop.shape == expected_shape
 
-    actions = np.random.rand(n_envs, individual_per_gen)
+    actions = np.random.rand(num_envs, individual_per_gen)
     new_pop, reward, terminated, truncated, infos = env.step(actions)
     assert new_pop.shape == expected_shape
-    assert reward.shape == (n_envs,)
+    assert reward.shape == (num_envs,)
     assert np.all(~terminated)
     assert np.all(~truncated)
     assert isinstance(infos, dict)
-    assert len(infos["GEBV"]) == n_envs
+    assert len(infos["GEBV"]) == num_envs
     for info in infos["GEBV"]:
         assert info.shape == (individual_per_gen, 1)
 
@@ -82,29 +82,29 @@ def test_distributed_env():
         genetic_map=genetic_map,
         individual_per_gen=individual_per_gen
     )
-    n_envs = envs_per_device * len(local_devices)
-    assert env.num_envs == n_envs
-    assert env.observation_space.shape[0] == n_envs
-    assert len(env.action_space) == n_envs
+    num_envs = envs_per_device * len(local_devices)
+    assert env.num_envs == num_envs
+    assert env.observation_space.shape[0] == num_envs
+    assert len(env.action_space) == num_envs
 
     pop, _ = env.reset()
-    expected_shape = (n_envs, individual_per_gen, 10_000, 2)
+    expected_shape = (num_envs, individual_per_gen, 10_000, 2)
     assert pop.shape == expected_shape
 
     actions = np.random.randint(
         0, individual_per_gen,
-        size=(n_envs, individual_per_gen, 2)
+        size=(num_envs, individual_per_gen, 2)
     )
     new_pop, reward, terminated, truncated, infos = env.step(actions)
 
     assert new_pop.shape == expected_shape
-    assert reward.shape == (n_envs,)
-    assert terminated.shape == (n_envs, )
-    assert truncated.shape == (n_envs, )
+    assert reward.shape == (num_envs,)
+    assert terminated.shape == (num_envs, )
+    assert truncated.shape == (num_envs, )
     assert np.all(~terminated)
     assert np.all(~truncated)
     assert isinstance(infos, dict)
-    assert len(infos["GEBV"]) == n_envs
+    assert len(infos["GEBV"]) == num_envs
     for info in infos["GEBV"]:
         assert info.shape == (individual_per_gen, 1)
 
@@ -112,10 +112,10 @@ def test_distributed_env():
 
 
 def test_vec_deterministic():
-    n_envs = 4
+    num_envs = 4
     individual_per_gen = 200
     env = VecBreedGym(
-        n_envs=n_envs,
+        num_envs=num_envs,
         initial_population=genome,
         genetic_map=genetic_map,
         individual_per_gen=individual_per_gen
@@ -125,7 +125,7 @@ def test_vec_deterministic():
     pop, _ = env.reset(seed=7)
     for _ in range(20):
         action = np.random.randint(
-            len(pop), size=(n_envs, individual_per_gen, 2)
+            len(pop), size=(num_envs, individual_per_gen, 2)
         )
         pop, rews, _, _, _ = env.step(action)
 
@@ -134,10 +134,10 @@ def test_vec_deterministic():
 
 
 def test_vec_gebv_policy():
-    n_envs = 4
+    num_envs = 4
     individual_per_gen = 200
     env = VecBreedGym(
-        n_envs=n_envs,
+        num_envs=num_envs,
         initial_population=genome,
         genetic_map=genetic_map,
         individual_per_gen=individual_per_gen,
@@ -154,10 +154,10 @@ def test_vec_gebv_policy():
 
 
 def test_vec_wrapper_n_crosses():
-    n_envs = 4
+    num_envs = 4
     individual_per_gen = 200
     env = VecBreedGym(
-        n_envs=n_envs,
+        num_envs=num_envs,
         initial_population=genome,
         genetic_map=genetic_map,
         individual_per_gen=individual_per_gen,
@@ -183,10 +183,10 @@ def test_vec_wrapper_n_crosses():
 
 
 def test_vec_pair_score():
-    n_envs = 4
+    num_envs = 4
     individual_per_gen = 200
     env = VecBreedGym(
-        n_envs=n_envs,
+        num_envs=num_envs,
         initial_population=genome,
         genetic_map=genetic_map,
         individual_per_gen=individual_per_gen

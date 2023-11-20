@@ -48,7 +48,7 @@ class SelectionValues(VectorWrapper):
         )
 
         self.action_space = spaces.Box(
-            -1e5, 1e5, shape=(self.n_envs, self.individual_per_gen)
+            -1e5, 1e5, shape=(self.num_envs, self.individual_per_gen)
         )
 
     @partial(jax.vmap, in_axes=(None, 0, 0))
@@ -77,7 +77,7 @@ class SelectionValues(VectorWrapper):
         )
 
     def step(self, actions: Float[Array, "envs n"]):
-        random_keys = jax.random.split(self.random_key, num=self.n_envs + 1)
+        random_keys = jax.random.split(self.random_key, num=self.num_envs + 1)
         self.env.random_key = random_keys[0]
         low_level_actions = self._convert_actions(actions, random_keys[1:])
         return super().step(low_level_actions)
@@ -95,7 +95,7 @@ class PairScores(VectorWrapper):
         )
 
         self.action_space = spaces.Box(
-            -1e5, 1e5, shape=(self.n_envs, *action_shape)
+            -1e5, 1e5, shape=(self.num_envs, *action_shape)
         )
 
     @partial(jax.vmap, in_axes=(None, 0))
@@ -138,7 +138,7 @@ class RavelIndex(VectorWrapper):
         n_vec = jnp.full((self.individual_per_gen,), n_elems)
         self.single_action_space = spaces.MultiDiscrete(n_vec)
         self.action_space = spaces.MultiDiscrete(
-            jnp.broadcast_to(n_vec[None, ...], (self.n_envs, *n_vec.shape))
+            jnp.broadcast_to(n_vec[None, ...], (self.num_envs, *n_vec.shape))
         )
 
     @partial(jax.vmap, in_axes=(None, 0))

@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 
-GENOME_FILE = DATA_PATH.joinpath("geno.txt")
+GENOME_FILE = DATA_PATH.joinpath("wheat_genome.npy")
 
 
 class BreedGym(gym.Env):
