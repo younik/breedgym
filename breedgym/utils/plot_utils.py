@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 
+
 NEURIPS_TEXT_WIDTH = 397.48499
 NEURIPS_FONT_FAMILY = "Times New Roman"
 

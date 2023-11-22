@@ -7,6 +7,7 @@ import optax
 from breedgym.simulator.simulator import BreedingSimulator
 from breedgym.utils.paths import DATA_PATH
 
+
 budgets = [30, 20, 10, 5]
 population = np.random.choice(a=[0.0, 1.0], size=(budgets[0], 10_000, 2), p=[0.5, 0.5])
 

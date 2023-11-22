@@ -5,6 +5,7 @@ import breedgym  # noqa
 from breedgym.utils.index_functions import optimal_haploid_value, yield_index
 from breedgym.utils.paths import DATA_PATH
 
+
 if __name__ == "__main__":
     num_generations = 10
     bests = [

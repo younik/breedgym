@@ -1,6 +1,7 @@
 from functools import partial
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
+from typing_extensions import override
 
 import jax
 import numpy as np
@@ -11,9 +12,9 @@ from gymnasium.experimental.vector import AsyncVectorEnv, VectorEnv
 from gymnasium.vector.utils.spaces import batch_space
 from jax._src.lib import xla_client as xc
 from jaxtyping import Array, Bool, Float, Int
-from typing_extensions import override
 
 from breedgym.utils.paths import DATA_PATH
+
 
 GENOME_FILE = DATA_PATH.joinpath("geno.txt")
 

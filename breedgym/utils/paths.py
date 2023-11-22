@@ -1,5 +1,6 @@
 import pathlib
 
+
 __all__ = ["PROJECT_PATH", "DATA_PATH", "CODE_PATH"]
 
 PROJECT_PATH = pathlib.Path(__file__).parents[2]

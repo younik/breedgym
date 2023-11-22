@@ -1,0 +1,51 @@
+# Package ######################################################################
+
+[build-system]
+requires = ["setuptools >= 61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "breedgym"
+description = "Suite of Gymnasium environments for optimizing breeding programs"
+readme = "README.md"
+requires-python = ">= 3.8"
+authors = [{ name = "Omar G. Younis", email = "omar.g.younis@gmail.com" }]
+license = { text = "BSD-3-Clause" }
+keywords = ["Reinforcement Learning", "Breeding", "genetics", "bioinformatics"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    'Intended Audience :: Science/Research',
+]
+dependencies = ["numpy", "pandas", "matplotlib", "chromax", "gymnasium>=0.29", "jax", "jaxtyping"]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+testing = ["pytest"]
+docs = ["sphinx-rtd-theme"]
+
+[project.urls]
+Repository = "https://github.com/younik/breedgym"
+"Bug Report" = "https://github.com/younik/breedgym/issues"
+
+[tool.setuptools]
+include-package-data = true
+
+
+# Linters and Test tools #######################################################
+
+[tool.black]
+safe = true
+
+[tool.isort]
+atomic = true
+profile = "black"
+src_paths = ["breedgym", "tests"]
+extra_standard_library = ["typing_extensions"]
+indent = 4
+lines_after_imports = 2
+multi_line_output = 3

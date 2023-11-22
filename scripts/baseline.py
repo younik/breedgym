@@ -3,6 +3,7 @@ import numpy as np
 
 from breedgym.utils.paths import DATA_PATH
 
+
 if __name__ == "__main__":
     individual_per_gen = 200
     trials = 100

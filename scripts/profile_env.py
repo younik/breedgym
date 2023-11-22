@@ -3,6 +3,7 @@ import jax
 
 from breedgym.utils.paths import DATA_PATH
 
+
 env = gym.make(
     "KBestBreedGym",
     individual_per_gen=200,

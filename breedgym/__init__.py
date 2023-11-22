@@ -1,5 +1,6 @@
 from gymnasium.envs.registration import register
 
+
 register(
     id="BreedGym",
     entry_point="breedgym.breedgym:BreedGym",
