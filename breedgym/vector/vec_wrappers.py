@@ -11,7 +11,7 @@ from chromax.typing import Population
 
 
 
-class SelectionValues(VectorWrapper):
+class SelectionScores(VectorWrapper):
 
     def __init__(
         self,

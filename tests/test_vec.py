@@ -2,7 +2,7 @@ import pytest
 from breedgym.vector.vec_env import DistributedBreedGym, VecBreedGym
 import numpy as np
 import jax
-from breedgym.vector.vec_wrappers import PairScores, SelectionValues
+from breedgym.vector.vec_wrappers import PairScores, SelectionScores
 import warnings
 from chromax.sample_data import genome, genetic_map
 
@@ -47,7 +47,7 @@ def test_selection_vec():
         individual_per_gen=individual_per_gen,
         trait_names=["Yield"]
     )
-    env = SelectionValues(env, k=10)
+    env = SelectionScores(env, k=10)
 
     pop, _ = env.reset()
     expected_shape = (num_envs, individual_per_gen, env.simulator.n_markers, 2)
@@ -143,7 +143,7 @@ def test_vec_gebv_policy():
         individual_per_gen=individual_per_gen,
         trait_names=["Yield"]
     )
-    env = SelectionValues(env, k=10)
+    env = SelectionScores(env, k=10)
 
     _, infos = env.reset(seed=7)
     for _ in range(10):
@@ -164,22 +164,22 @@ def test_vec_wrapper_n_crosses():
         trait_names=["Yield"]
     )
 
-    env = SelectionValues(env, k=10, n_crosses=20)
+    env = SelectionScores(env, k=10, n_crosses=20)
     _, infos = env.reset(seed=7)
     pop, _, _, _, _ = env.step(infos["GEBV"].squeeze())
     assert pop.shape[1] == individual_per_gen
 
     with pytest.raises(ValueError):
-        env = SelectionValues(env, k=100, n_crosses=201)
+        env = SelectionScores(env, k=100, n_crosses=201)
 
     with pytest.raises(ValueError):
-        env = SelectionValues(env, k=2, n_crosses=10)
+        env = SelectionScores(env, k=2, n_crosses=10)
 
     with pytest.raises(ValueError):
-        env = SelectionValues(env, k=1, n_crosses=1)
+        env = SelectionScores(env, k=1, n_crosses=1)
 
     with pytest.raises(ValueError):
-        env = SelectionValues(env, k=500, n_crosses=10)
+        env = SelectionScores(env, k=500, n_crosses=10)
 
 
 def test_vec_pair_score():
