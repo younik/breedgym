@@ -1,14 +1,15 @@
 import gymnasium as gym
 import numpy as np
-from chromax.sample_data import genome, genetic_map
 import pytest
+from chromax.sample_data import genetic_map, genome
 
 
 def test_reset_population():
-    env = gym.make("BreedGym",
-                   initial_population=genome,
-                   genetic_map=genetic_map,
-                   )
+    env = gym.make(
+        "BreedGym",
+        initial_population=genome,
+        genetic_map=genetic_map,
+    )
 
     pop, _ = env.reset()
     init_pop = np.copy(pop)
@@ -20,10 +21,11 @@ def test_reset_population():
 
 @pytest.mark.parametrize("n", [1, 5, 10])
 def test_num_progenies(n):
-    env = gym.make("BreedGym",
-                   initial_population=genome,
-                   genetic_map=genetic_map,
-                   )
+    env = gym.make(
+        "BreedGym",
+        initial_population=genome,
+        genetic_map=genetic_map,
+    )
     pop, _ = env.reset()
 
     action = np.random.randint(len(pop), size=(n, 2))
@@ -33,10 +35,11 @@ def test_num_progenies(n):
 
 
 def test_caching():
-    env = gym.make("BreedGym",
-                   initial_population=genome,
-                   genetic_map=genetic_map,
-                   )
+    env = gym.make(
+        "BreedGym",
+        initial_population=genome,
+        genetic_map=genetic_map,
+    )
     env.reset()
 
     GEBV = env.GEBV
@@ -61,11 +64,12 @@ def test_caching():
 
 
 def test_reward_shaping():
-    env = gym.make("BreedGym",
-                   initial_population=genome,
-                   genetic_map=genetic_map,
-                   reward_shaping=False
-                   )
+    env = gym.make(
+        "BreedGym",
+        initial_population=genome,
+        genetic_map=genetic_map,
+        reward_shaping=False,
+    )
 
     pop, _ = env.reset()
 
@@ -82,11 +86,12 @@ def test_reward_shaping():
     assert reward != 0
     assert truncated
 
-    env2 = gym.make("BreedGym",
-                    initial_population=genome,
-                    genetic_map=genetic_map,
-                    reward_shaping=True
-                    )
+    env2 = gym.make(
+        "BreedGym",
+        initial_population=genome,
+        genetic_map=genetic_map,
+        reward_shaping=True,
+    )
 
     pop, _ = env2.reset()
     action = np.asarray(env2.action_space.sample()) % len(pop)
@@ -96,25 +101,17 @@ def test_reward_shaping():
 
 
 def test_deterministic():
-    env = gym.make("BreedGym",
-                   initial_population=genome,
-                   genetic_map=genetic_map,
-                   reward_shaping=False
-                   )
+    env = gym.make(
+        "BreedGym",
+        initial_population=genome,
+        genetic_map=genetic_map,
+        reward_shaping=False,
+    )
 
     env.reset(seed=7)
-    action = np.array([
-        [1, 2],
-        [1, 5],
-        [1, 7],
-        [2, 5],
-        [2, 9],
-        [4, 7],
-        [4, 8],
-        [5, 9],
-        [6, 8],
-        [6, 9]
-    ])
+    action = np.array(
+        [[1, 2], [1, 5], [1, 7], [2, 5], [2, 9], [4, 7], [4, 8], [5, 9], [6, 8], [6, 9]]
+    )
 
     for _ in range(10):
         _, r, _, _, _ = env.step(action)

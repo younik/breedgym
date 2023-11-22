@@ -1,10 +1,12 @@
-import pytest
-from breedgym.vector.vec_env import DistributedBreedGym, VecBreedGym
-import numpy as np
-import jax
-from breedgym.vector.vec_wrappers import PairScores, SelectionScores
 import warnings
-from chromax.sample_data import genome, genetic_map
+
+import jax
+import numpy as np
+import pytest
+from chromax.sample_data import genetic_map, genome
+
+from breedgym.vector.vec_env import DistributedBreedGym, VecBreedGym
+from breedgym.vector.vec_wrappers import PairScores, SelectionScores
 
 
 def test_vec():
@@ -14,7 +16,7 @@ def test_vec():
         num_envs=num_envs,
         initial_population=genome,
         genetic_map=genetic_map,
-        individual_per_gen=individual_per_gen
+        individual_per_gen=individual_per_gen,
     )
 
     pop, _ = env.reset()
@@ -22,8 +24,7 @@ def test_vec():
     assert pop.shape == expected_shape
 
     actions = np.random.randint(
-        0, individual_per_gen,
-        size=(num_envs, individual_per_gen, 2)
+        0, individual_per_gen, size=(num_envs, individual_per_gen, 2)
     )
     new_pop, reward, terminated, truncated, infos = env.step(actions)
 
@@ -45,7 +46,7 @@ def test_selection_vec():
         initial_population=genome,
         genetic_map=genetic_map,
         individual_per_gen=individual_per_gen,
-        trait_names=["Yield"]
+        trait_names=["Yield"],
     )
     env = SelectionScores(env, k=10)
 
@@ -68,9 +69,7 @@ def test_selection_vec():
 def test_distributed_env():
     local_devices = jax.local_devices()
     if len(local_devices) == 1:
-        warnings.warn(
-            "Distributed test skipped because there is only one device."
-        )
+        warnings.warn("Distributed test skipped because there is only one device.")
         return
 
     envs_per_device = 4
@@ -80,7 +79,7 @@ def test_distributed_env():
         devices=local_devices,
         initial_population=genome,
         genetic_map=genetic_map,
-        individual_per_gen=individual_per_gen
+        individual_per_gen=individual_per_gen,
     )
     num_envs = envs_per_device * len(local_devices)
     assert env.num_envs == num_envs
@@ -92,15 +91,14 @@ def test_distributed_env():
     assert pop.shape == expected_shape
 
     actions = np.random.randint(
-        0, individual_per_gen,
-        size=(num_envs, individual_per_gen, 2)
+        0, individual_per_gen, size=(num_envs, individual_per_gen, 2)
     )
     new_pop, reward, terminated, truncated, infos = env.step(actions)
 
     assert new_pop.shape == expected_shape
     assert reward.shape == (num_envs,)
-    assert terminated.shape == (num_envs, )
-    assert truncated.shape == (num_envs, )
+    assert terminated.shape == (num_envs,)
+    assert truncated.shape == (num_envs,)
     assert np.all(~terminated)
     assert np.all(~truncated)
     assert isinstance(infos, dict)
@@ -118,15 +116,13 @@ def test_vec_deterministic():
         num_envs=num_envs,
         initial_population=genome,
         genetic_map=genetic_map,
-        individual_per_gen=individual_per_gen
+        individual_per_gen=individual_per_gen,
     )
 
     np.random.seed(seed=7)
     pop, _ = env.reset(seed=7)
     for _ in range(20):
-        action = np.random.randint(
-            len(pop), size=(num_envs, individual_per_gen, 2)
-        )
+        action = np.random.randint(len(pop), size=(num_envs, individual_per_gen, 2))
         pop, rews, _, _, _ = env.step(action)
 
     expected_result = np.array([11.618341, 11.29245, 13.47926, 10.03809])
@@ -141,7 +137,7 @@ def test_vec_gebv_policy():
         initial_population=genome,
         genetic_map=genetic_map,
         individual_per_gen=individual_per_gen,
-        trait_names=["Yield"]
+        trait_names=["Yield"],
     )
     env = SelectionScores(env, k=10)
 
@@ -161,7 +157,7 @@ def test_vec_wrapper_n_crosses():
         initial_population=genome,
         genetic_map=genetic_map,
         individual_per_gen=individual_per_gen,
-        trait_names=["Yield"]
+        trait_names=["Yield"],
     )
 
     env = SelectionScores(env, k=10, n_crosses=20)
@@ -189,7 +185,7 @@ def test_vec_pair_score():
         num_envs=num_envs,
         initial_population=genome,
         genetic_map=genetic_map,
-        individual_per_gen=individual_per_gen
+        individual_per_gen=individual_per_gen,
     )
     env = PairScores(env)
 

@@ -1,4 +1,5 @@
 from math import ceil
+
 import numpy as np
 
 
@@ -18,7 +19,6 @@ def _poor_yield_indices(GEBV_model, pop, F):
 
 
 def optimal_haploid_value(GEBV_model, F=0, B=None, chr_lens=None):
-
     def optimal_haploid_value_f(pop):
         OHP = optimal_haploid_pop(GEBV_model, pop, B, chr_lens)
         OHV = 2 * GEBV_model(OHP[..., None]).squeeze()
@@ -26,7 +26,7 @@ def optimal_haploid_value(GEBV_model, F=0, B=None, chr_lens=None):
 
         if F > 0:
             remove_indices = _poor_yield_indices(GEBV_model, pop, F)
-            OHV[remove_indices] = -float('inf')
+            OHV[remove_indices] = -float("inf")
 
         return OHV
 
@@ -42,7 +42,7 @@ def optimal_haploid_pop(GEBV_model, population, B=None, chr_lens=None):
 
 
 def _optimal_haploid_pop_B(GEBV_model, population, B, chr_lens):
-    OHP = np.empty((population.shape[0], population.shape[1]), dtype='bool')
+    OHP = np.empty((population.shape[0], population.shape[1]), dtype="bool")
 
     start_idx = 0
     for chr_length in chr_lens:
@@ -52,9 +52,7 @@ def _optimal_haploid_pop_B(GEBV_model, population, B, chr_lens):
             end_block = min(start_idx + block_length, end_chr)
             pop_slice = population[:, start_idx:end_block]
             effect_slice = GEBV_model.marker_effects[start_idx:end_block]
-            block_gebv = np.einsum(
-                "nmd,me->nd", pop_slice, effect_slice
-            )
+            block_gebv = np.einsum("nmd,me->nd", pop_slice, effect_slice)  # noqa
             best_blocks = np.argmax(block_gebv, axis=-1)
             OHP[:, start_idx:end_block] = np.take_along_axis(
                 pop_slice, best_blocks[:, None, None], axis=2
@@ -68,7 +66,7 @@ def _optimal_haploid_pop_B(GEBV_model, population, B, chr_lens):
 
 def _optimal_haploid_pop(GEBV_model, population):
     optimal_haploid_pop = np.empty(
-        (population.shape[0], population.shape[1]), dtype='bool'
+        (population.shape[0], population.shape[1]), dtype="bool"
     )
 
     positive_mask = GEBV_model.positive_mask.squeeze()
@@ -84,13 +82,12 @@ def _optimal_haploid_pop(GEBV_model, population):
 
 
 def optimal_population_value(GEBV_model, n, F=0, B=None, chr_lens=None):
-
     def optimal_population_value_f(population):
         indices = np.arange(len(population))
         remove_indices = _poor_yield_indices(GEBV_model, population, F)
         indices = np.delete(indices, remove_indices)
 
-        output = np.zeros(len(population), dtype='bool')
+        output = np.zeros(len(population), dtype="bool")
         positive_mask = GEBV_model.marker_effects[:, 0] > 0
         current_set = ~positive_mask
         G = optimal_haploid_pop(GEBV_model, population[indices], B, chr_lens)

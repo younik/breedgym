@@ -1,20 +1,21 @@
-import gymnasium as gym
-import numpy as np
 import time
+
+import gymnasium as gym
+import matplotlib.pyplot as plt
+import numpy as np
+
 from breedgym.simulator.gebv_model import GEBVModel
 from breedgym.utils.index_functions import (
     optimal_haploid_value,
     optimal_population_value,
-    yield_index
+    yield_index,
 )
 from breedgym.utils.paths import DATA_PATH
-import matplotlib.pyplot as plt
 from breedgym.utils.plot_utils import NEURIPS_FONT_FAMILY, set_up_plt
 from breedgym.wrappers import SimplifiedBreedGym
 
 
 class GeneticDiversityWrapper(gym.Wrapper):
-
     def __init__(self, env):
         super().__init__(env)
 
@@ -45,23 +46,24 @@ class GeneticDiversityWrapper(gym.Wrapper):
         return (max_GEBV - min_GEBV).squeeze()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     num_generations = 10
     individual_per_gen = 200
     n_bests = 20
     n_crosses = 10
 
     trials = 50
-    names = ["standard"] #, "OHV"]#, "OPV"]
+    names = ["standard"]  # , "OHV"]#, "OPV"]
     colors = ["b", "g", "r"]
 
     set_up_plt(NEURIPS_FONT_FAMILY, use_tex=False)
     fig, axs = plt.subplots(1, 2, figsize=(8, 4))
 
-    env = gym.make("breedgym:BreedGym",
-                   initial_population=DATA_PATH.joinpath("sample_full_pop_geno.txt"),
-                   genetic_map=DATA_PATH.joinpath("sample_with_r_genetic_map.txt"),
-                   )
+    env = gym.make(
+        "breedgym:BreedGym",
+        initial_population=DATA_PATH.joinpath("sample_full_pop_geno.txt"),
+        genetic_map=DATA_PATH.joinpath("sample_with_r_genetic_map.txt"),
+    )
     env = GeneticDiversityWrapper(env)
     env = SimplifiedBreedGym(env, individual_per_gen=individual_per_gen)
 
@@ -69,7 +71,9 @@ if __name__ == '__main__':
     indices = [
         yield_index(GEBV_model),
         optimal_haploid_value(GEBV_model, F=0.7, B=12, chr_lens=env.simulator.chr_lens),
-        optimal_population_value(GEBV_model, n_bests, F=0.4, B=12, chr_lens=env.simulator.chr_lens)
+        optimal_population_value(
+            GEBV_model, n_bests, F=0.4, B=12, chr_lens=env.simulator.chr_lens
+        ),
     ]
 
     start_time = time.time()
@@ -89,10 +93,12 @@ if __name__ == '__main__':
                 buffer_gg[trial_idx, i + 1] = env.GEBV.mean()
                 buffer_g_div[trial_idx, i + 1] = info["genetic_diversity"]
 
-        buffer_gg = (buffer_gg - buffer_gg[:, 0][:, None]) / env.simulator.max_gebv * 100
-        gg = np.mean(buffer_gg, axis=0) 
+        buffer_gg = (
+            (buffer_gg - buffer_gg[:, 0][:, None]) / env.simulator.max_gebv * 100
+        )
+        gg = np.mean(buffer_gg, axis=0)
         gg_stderr = np.std(buffer_gg, axis=0, ddof=1) / np.sqrt(trials)
-        buffer_g_div /= (env.simulator.max_gebv - env.simulator.min_gebv)
+        buffer_g_div /= env.simulator.max_gebv - env.simulator.min_gebv
         buffer_g_div *= 100
         g_div = np.mean(buffer_g_div, axis=0)
         g_div_stderr = np.std(buffer_g_div, axis=0, ddof=1) / np.sqrt(trials)
@@ -101,20 +107,21 @@ if __name__ == '__main__':
 
         axs[0].set_xticks(xticks)
         axs[0].set_title("Genetic Gain (%)")
-        axs[0].grid(axis='y')
-        axs[0].set_xlabel('Generations [Years]')
+        axs[0].grid(axis="y")
+        axs[0].set_xlabel("Generations [Years]")
         axs[0].plot(xticks, gg, label=label)
-        axs[0].fill_between(xticks, gg-gg_stderr, gg+gg_stderr, alpha=0.2)
+        axs[0].fill_between(xticks, gg - gg_stderr, gg + gg_stderr, alpha=0.2)
 
         axs[1].set_xticks(xticks)
         axs[1].set_title("Genetic Diversity")
-        axs[1].grid(axis='y')
-        axs[1].set_xlabel('Generations [Years]')
+        axs[1].grid(axis="y")
+        axs[1].set_xlabel("Generations [Years]")
         axs[1].plot(xticks, g_div)
-        axs[1].fill_between(xticks, g_div-g_div_stderr,
-                            g_div+g_div_stderr, alpha=0.2)
+        axs[1].fill_between(
+            xticks, g_div - g_div_stderr, g_div + g_div_stderr, alpha=0.2
+        )
 
     print("Elapsed time", time.time() - start_time, flush=True)
-    plt.figlegend(loc='upper right')
-    plt.savefig(f"figures/test_baseline.png")
+    plt.figlegend(loc="upper right")
+    plt.savefig("figures/test_baseline.png")
     plt.show()

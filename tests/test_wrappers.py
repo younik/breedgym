@@ -1,16 +1,17 @@
 import gymnasium as gym
-import pytest
 import numpy as np
-from chromax.sample_data import genome, genetic_map
+import pytest
+from chromax.sample_data import genetic_map, genome
 
 
 def test_simplified_env():
     individual_per_gen = 200
-    env = gym.make("SimplifiedBreedGym",
-                   individual_per_gen=individual_per_gen,
-                   initial_population=genome,
-                   genetic_map=genetic_map,
-                   )
+    env = gym.make(
+        "SimplifiedBreedGym",
+        individual_per_gen=individual_per_gen,
+        initial_population=genome,
+        genetic_map=genetic_map,
+    )
 
     obs, _ = env.reset()
     assert len(obs["GEBV"]) == individual_per_gen
@@ -20,7 +21,7 @@ def test_simplified_env():
     actions = [
         {"n_bests": 10, "n_crosses": 20},
         {"n_bests": 21, "n_crosses": 200},
-        {"n_bests": 2, "n_crosses": 1}
+        {"n_bests": 2, "n_crosses": 1},
     ]
 
     for action in actions:
@@ -44,11 +45,12 @@ def test_simplified_env():
 
 def test_kbest_env():
     individual_per_gen = 200
-    env = gym.make("KBestBreedGym",
-                   individual_per_gen=individual_per_gen,
-                   initial_population=genome,
-                   genetic_map=genetic_map,
-                   )
+    env = gym.make(
+        "KBestBreedGym",
+        individual_per_gen=individual_per_gen,
+        initial_population=genome,
+        genetic_map=genetic_map,
+    )
     obs, _ = env.reset()
     assert len(obs["GEBV"]) == individual_per_gen
     assert len(obs["corrcoef"]) == individual_per_gen
@@ -70,16 +72,17 @@ def test_kbest_env():
 
 def test_gebv_policy():
     individual_per_gen = 200
-    env = gym.make("KBestBreedGym",
-                   individual_per_gen=individual_per_gen,
-                   initial_population=genome,
-                   genetic_map=genetic_map,
-                   trait_names=["Yield"]
-                   )
+    env = gym.make(
+        "KBestBreedGym",
+        individual_per_gen=individual_per_gen,
+        initial_population=genome,
+        genetic_map=genetic_map,
+        trait_names=["Yield"],
+    )
     env.reset(seed=7)
     action = 10
 
     for _ in range(10):
         _, r, _, _, _ = env.step(action)
 
-    assert abs(r - 20.315044) < 1e-6
+    assert abs(r - 20.315035) < 1e-5

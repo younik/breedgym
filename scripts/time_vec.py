@@ -1,13 +1,14 @@
 import timeit
+from functools import partial
 
+import jax
 import numpy as np
 import pandas as pd
-from functools import partial
+from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
+
 from breedgym.breedgym import BreedGym
 from breedgym.utils.paths import DATA_PATH
-from breedgym.vector.vec_env import VecBreedGym, DistributedBreedGym
-from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
-import jax
+from breedgym.vector.vec_env import DistributedBreedGym, VecBreedGym
 
 
 def make_jax_vec(n_env):
@@ -15,7 +16,7 @@ def make_jax_vec(n_env):
         num_envs=n_env,
         initial_population=DATA_PATH.joinpath("small_geno.txt"),
         genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
-        individual_per_gen=210
+        individual_per_gen=210,
     )
     return env
 
@@ -25,7 +26,7 @@ def make_distributed_vec(n_env):
         envs_per_device=n_env // jax.local_device_count(),
         initial_population=DATA_PATH.joinpath("small_geno.txt"),
         genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"),
-        individual_per_gen=210
+        individual_per_gen=210,
     )
     return env
 
@@ -57,10 +58,8 @@ if __name__ == "__main__":
             env.reset()
 
             t = timeit.timeit(
-                lambda: env.step(
-                    np.random.randint(0, 210, size=(n_env, 210, 2))
-                ),
-                number=repeats
+                lambda: env.step(np.random.randint(0, 210, size=(n_env, 210, 2))),
+                number=repeats,
             )
 
             table[row, col] = t / repeats

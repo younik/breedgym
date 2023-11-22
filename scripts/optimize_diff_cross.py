@@ -1,22 +1,16 @@
 import jax
 import jax.numpy as jnp
-import numpy as np
-from breedgym.simulator.simulator import BreedingSimulator
-from breedgym.utils.paths import DATA_PATH
 import matplotlib.pyplot as plt
+import numpy as np
 import optax
 
+from breedgym.simulator.simulator import BreedingSimulator
+from breedgym.utils.paths import DATA_PATH
 
 budgets = [30, 20, 10, 5]
-population = np.random.choice(
-    a=[0.0, 1.0],
-    size=(budgets[0], 10_000, 2),
-    p=[0.5, 0.5]
-)
+population = np.random.choice(a=[0.0, 1.0], size=(budgets[0], 10_000, 2), p=[0.5, 0.5])
 
-simulator = BreedingSimulator(
-    genetic_map=DATA_PATH.joinpath("small_genetic_map.txt")
-)
+simulator = BreedingSimulator(genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"))
 
 marker_effects = simulator.GEBV_model.marker_effects
 diff_cross = simulator.differentiable_cross_func
@@ -32,7 +26,7 @@ def breeding_func(population, params, key):
 
 
 def loss(population, params, key):
-    return - breeding_func(population, params, key)
+    return -breeding_func(population, params, key)
 
 
 def normalize_params(params):
@@ -44,7 +38,7 @@ d_loss = jax.grad(loss, argnums=1)
 
 params = {}
 for gen in range(1, len(budgets)):
-    gen_w = np.random.rand(budgets[gen], budgets[gen-1], 2)
+    gen_w = np.random.rand(budgets[gen], budgets[gen - 1], 2)
     params[f"w_{gen}"] = gen_w
 normalize_params(params)
 

@@ -1,33 +1,29 @@
-from gymnasium.experimental.vector import VectorWrapper
-from gymnasium import spaces
-from breedgym.vector import VecBreedGym
-import numpy as np
-import jax
 from functools import partial
+
+import jax
 import jax.numpy as jnp
+import numpy as np
+from gymnasium import spaces
+from gymnasium.experimental.vector import VectorWrapper
+
+from breedgym.vector import VecBreedGym
 
 
 class WheatBreedGym(VectorWrapper):
-    
-    def __init__(self, vec_env: VecBreedGym, n_lines=200, plant_per_line=100, k_per_line=5):
+    def __init__(
+        self, vec_env: VecBreedGym, n_lines=200, plant_per_line=100, k_per_line=5
+    ):
         super().__init__(vec_env)
         self.n_lines = n_lines
         self.plant_per_line = plant_per_line
         self.k_per_line = k_per_line
         action_shape = self.n_lines, self.n_lines
-        self.single_action_space = spaces.Box(
-            -1e5, 1e5, shape=action_shape
-        )
+        self.single_action_space = spaces.Box(-1e5, 1e5, shape=action_shape)
 
-        self.action_space = spaces.Box(
-            -1e5, 1e5, shape=(self.num_envs, *action_shape)
-        )
+        self.action_space = spaces.Box(-1e5, 1e5, shape=(self.num_envs, *action_shape))
 
     @partial(jax.vmap, in_axes=(None, 0))
-    def _convert_actions(
-        self,
-        action
-    ):
+    def _convert_actions(self, action):
         best_values, best_crosses = jax.lax.top_k(action.flatten(), self.n_lines)
         offspring_per_cross = jax.nn.softmax(best_values) * self.n_lines
         row_indices = best_crosses // self.n_lines
@@ -37,7 +33,7 @@ class WheatBreedGym(VectorWrapper):
             cross_indices,
             jnp.ceil(offspring_per_cross).astype(jnp.int32),
             axis=0,
-            total_repeat_length=self.n_lines
+            total_repeat_length=self.n_lines,
         )
 
     @partial(jax.vmap, in_axes=(None, 0))
@@ -58,7 +54,7 @@ class WheatBreedGym(VectorWrapper):
         pop = self._select_line(pop)
         pop = pop.reshape(pop.shape[0], pop.shape[1] * pop.shape[2], *pop.shape[3:])
         self.env.populations = self.simulator.select(pop, k=self.individual_per_gen)
-        
+
         self.env.step_idx += 1
         infos = self.get_info()
         done = self.env.step_idx == self.num_generations

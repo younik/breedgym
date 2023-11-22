@@ -1,18 +1,19 @@
 from functools import partial
 from pathlib import Path
-from typing import List, Optional, Union, Tuple
-from typing_extensions import override
-from gymnasium import spaces
-from gymnasium.experimental.vector import VectorEnv, AsyncVectorEnv
-from gymnasium.vector.utils.spaces import batch_space
+from typing import List, Optional, Tuple, Union
+
 import jax
-from jax._src.lib import xla_client as xc
-from jaxtyping import Array, Bool, Float, Int
 import numpy as np
 from chromax import Simulator
-from chromax.typing import Population, Parents
-from breedgym.utils.paths import DATA_PATH
+from chromax.typing import Parents, Population
+from gymnasium import spaces
+from gymnasium.experimental.vector import AsyncVectorEnv, VectorEnv
+from gymnasium.vector.utils.spaces import batch_space
+from jax._src.lib import xla_client as xc
+from jaxtyping import Array, Bool, Float, Int
+from typing_extensions import override
 
+from breedgym.utils.paths import DATA_PATH
 
 GENOME_FILE = DATA_PATH.joinpath("geno.txt")
 
@@ -20,20 +21,12 @@ GENOME_FILE = DATA_PATH.joinpath("geno.txt")
 @partial(jax.jit, static_argnums=1)
 @partial(jax.vmap, in_axes=(None, None, 0))
 def _random_selection(
-    germplasm: Population["n"],
-    length: int,
-    key: jax.random.PRNGKeyArray
+    germplasm: Population["n"], length: int, key: jax.random.PRNGKeyArray
 ) -> Population["length"]:
-    return jax.random.choice(
-        key,
-        germplasm,
-        shape=(length,),
-        replace=False
-    )
+    return jax.random.choice(key, germplasm, shape=(length,), replace=False)
 
 
 class VecBreedGym(VectorEnv):
-
     def __init__(
         self,
         num_envs: int,
@@ -42,7 +35,7 @@ class VecBreedGym(VectorEnv):
         num_generations: int = 10,
         autoreset: bool = True,
         reward_shaping: bool = False,
-        **kwargs
+        **kwargs,
     ):
         self.num_envs = num_envs
         self.num_generations = num_generations
@@ -64,13 +57,13 @@ class VecBreedGym(VectorEnv):
             low=0,
             high=1,
             shape=(self.num_envs, self.individual_per_gen, self.germplasm.shape[1], 2),
-            dtype=np.int8
+            dtype=np.int8,
         )
         self.action_space = spaces.Box(
             low=0,
             high=self.individual_per_gen,
             shape=(self.num_envs, self.individual_per_gen, 2),
-            dtype=np.int32
+            dtype=np.int32,
         )
 
         self.populations = None
@@ -83,14 +76,13 @@ class VecBreedGym(VectorEnv):
         return self.simulator.cross(parents)
 
     def step(
-        self,
-        actions: Int[Array, "envs n 2"]
+        self, actions: Int[Array, "envs n 2"]
     ) -> Tuple[
         Population["envs n"],
         Float[Array, "envs"],
         Bool[Array, "envs"],
         Bool[Array, "envs"],
-        dict
+        dict,
     ]:
         actions = jax.device_put(actions, device=self.device)
         arange_envs = np.arange(self.num_envs)[:, None, None]
@@ -114,9 +106,7 @@ class VecBreedGym(VectorEnv):
         return self.populations, rews, terminated, truncated, infos
 
     def reset(
-        self,
-        seed: Optional[int] = None,
-        options: Optional[dict] = None
+        self, seed: Optional[int] = None, options: Optional[dict] = None
     ) -> Tuple[Population["envs n"], dict]:
         self.step_idx = 0
         if seed is not None:
@@ -133,9 +123,7 @@ class VecBreedGym(VectorEnv):
             self.individual_per_gen = options["individual_per_gen"]
 
         self.populations = _random_selection(
-            self.germplasm,
-            self.individual_per_gen,
-            keys[1:]
+            self.germplasm, self.individual_per_gen, keys[1:]
         )
         self.reset_infos = self.get_info()
         return self.populations, self.reset_infos
@@ -149,14 +137,9 @@ class VecBreedGym(VectorEnv):
 
 
 class _VecBreedGym(VecBreedGym):
-
-    def step(self, action) -> Tuple[
-        Population["envs n"],
-        Float[Array, "envs"],
-        bool,
-        bool,
-        dict
-    ]:
+    def step(
+        self, action
+    ) -> Tuple[Population["envs n"], Float[Array, "envs"], bool, bool, dict]:
         obs, rews, ter, tru, infos = super().step(action)
         assert np.all(ter == ter[0])
         assert np.all(tru == tru[0])
@@ -164,13 +147,12 @@ class _VecBreedGym(VecBreedGym):
 
 
 class DistributedBreedGym(AsyncVectorEnv):
-
     def __init__(
         self,
         envs_per_device: int,
         initial_population: Union[str, Path, Population["n"]],
         devices: Optional[List[xc.Device]] = None,
-        **kwargs
+        **kwargs,
     ):
         if devices is None:
             devices = jax.local_devices()
@@ -178,10 +160,7 @@ class DistributedBreedGym(AsyncVectorEnv):
         self.envs_per_device = envs_per_device
 
         dummy_env = VecBreedGym(
-            1,
-            device=None,
-            initial_population=initial_population,
-            **kwargs
+            1, device=None, initial_population=initial_population, **kwargs
         )
         single_observation_space = dummy_env.single_observation_space
         single_action_space = dummy_env.single_action_space
@@ -195,7 +174,7 @@ class DistributedBreedGym(AsyncVectorEnv):
                 initial_population=germplasm,
                 device=device_id,
                 autoreset=False,
-                **kwargs
+                **kwargs,
             )
             for device_id in device_ids
         ]
@@ -205,13 +184,9 @@ class DistributedBreedGym(AsyncVectorEnv):
         self.single_observation_space = single_observation_space
         self.single_action_space = single_action_space
         self.observation_space = batch_space(
-            self.single_observation_space,
-            self.num_envs
+            self.single_observation_space, self.num_envs
         )
-        self.action_space = batch_space(
-            self.single_action_space,
-            self.num_envs
-        )
+        self.action_space = batch_space(self.single_action_space, self.num_envs)
         self._actions = None
 
     def reset(self, *args, **kwargs) -> Tuple[Population["envs n"], dict]:
@@ -220,27 +195,25 @@ class DistributedBreedGym(AsyncVectorEnv):
 
     def step_async(self, actions: Int[Array, "envs n 2"]):
         super().step_async(
-            actions.reshape(
-                len(self.devices),
-                self.envs_per_device,
-                *actions.shape[1:]
-            )
+            actions.reshape(len(self.devices), self.envs_per_device, *actions.shape[1:])
         )
 
-    def step_wait(self, *args, **kwargs) -> Tuple[
+    def step_wait(
+        self, *args, **kwargs
+    ) -> Tuple[
         Population["envs n"],
         Float[Array, "envs"],
         Bool[Array, "envs"],
         Bool[Array, "envs"],
-        dict
+        dict,
     ]:
         obs, rews, ter, tru, infos = super().step_wait(*args, **kwargs)
         obs = obs.reshape(-1, *obs.shape[2:])
 
         assert np.all(ter == ter[0])
-        terminated = np.full((self.num_envs, ), ter[0])
+        terminated = np.full((self.num_envs,), ter[0])
         assert np.all(tru == tru[0])
-        truncated = np.full((self.num_envs, ), tru[0])
+        truncated = np.full((self.num_envs,), tru[0])
 
         return obs, rews.flatten(), terminated, truncated, infos
 

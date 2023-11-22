@@ -1,5 +1,12 @@
 from .vec_env import VecBreedGym
-from .vec_wrappers import SelectionScores, PairScores, RavelIndex
-from .breeding_programs_env import WheatBreedGym
+from .vec_wrappers import PairScores, RavelIndex, SelectionScores
 
-__all__ = ["VecBreedGym", "SelectionScores", "PairScores", "RavelIndex", "WheatBreedGym"]
+from .breeding_programs_env import WheatBreedGym  # isort: skip
+
+__all__ = [
+    "VecBreedGym",
+    "SelectionScores",
+    "PairScores",
+    "RavelIndex",
+    "WheatBreedGym",
+]

@@ -1,29 +1,30 @@
 import gymnasium as gym
-from breedgym.utils.paths import DATA_PATH
 import numpy as np
 
+from breedgym.utils.paths import DATA_PATH
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     individual_per_gen = 200
     trials = 100
-    #actions = [10] * 10 
+    # actions = [10] * 10
 
-    env = gym.make("breedgym:SimplifiedBreedGym",
-                   initial_population=DATA_PATH.joinpath("small_const_chr_geno.txt"),
-                   genetic_map=DATA_PATH.joinpath("small_const_chr_genetic_map.txt"),
-                   individual_per_gen=individual_per_gen,
-                   num_generations=10,
-                   reward_shaping=False
-                   )
+    env = gym.make(
+        "breedgym:SimplifiedBreedGym",
+        initial_population=DATA_PATH.joinpath("small_const_chr_geno.txt"),
+        genetic_map=DATA_PATH.joinpath("small_const_chr_genetic_map.txt"),
+        individual_per_gen=individual_per_gen,
+        num_generations=10,
+        reward_shaping=False,
+    )
 
-    buffer_gg = np.zeros((trials))
+    buffer_gg = np.zeros(trials)
     for trial_idx in range(trials):
         print(trial_idx, flush=True)
         env.reset()
 
         tru = False
         ter = False
-        #acts = iter(actions)
+        # acts = iter(actions)
         while not (tru or ter):
             _, rew, ter, tru, _ = env.step({"n_bests": 20, "n_crosses": 10})
             buffer_gg[trial_idx] += rew

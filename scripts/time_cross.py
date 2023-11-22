@@ -1,8 +1,10 @@
-from breedgym.simulator import BreedingSimulator
-import numpy as np
-from breedgym.utils.paths import DATA_PATH
 import timeit
+
+import numpy as np
 import pandas as pd
+
+from breedgym.simulator import BreedingSimulator
+from breedgym.utils.paths import DATA_PATH
 
 # import os
 # os.environ["CUDA_VISIBLE_DEVICES"] = ""
@@ -12,16 +14,12 @@ import pandas as pd
 n_progenies = [300]
 data_sizes = ["big"]
 
-n_markers = {
-    "small": 10_000,
-    "medium": 150_000,
-    "big": 1406757
-}
+n_markers = {"small": 10_000, "medium": 150_000, "big": 1406757}
 
 dataset = {
     "small": "small_genetic_map.txt",
     "medium": "medium_genetic_map.txt",
-    "big": "genetic_map.txt"
+    "big": "genetic_map.txt",
 }
 
 repeats = 25
@@ -32,15 +30,12 @@ for row, n_prog in enumerate(n_progenies):
     for col, dsize in enumerate(data_sizes):
         size = (n_prog, 2, n_markers[dsize], 2)
         # parents = np.random.choice(a=[False, True], size=size, p=[0.5, 0.5])
-        parents = np.zeros(size, dtype='bool')
+        parents = np.zeros(size, dtype="bool")
 
-        simulator = BreedingSimulator(
-            genetic_map=DATA_PATH.joinpath(dataset[dsize])
-        )
+        simulator = BreedingSimulator(genetic_map=DATA_PATH.joinpath(dataset[dsize]))
 
         t = timeit.timeit(
-            lambda: simulator.cross(parents).block_until_ready(),
-            number=repeats
+            lambda: simulator.cross(parents).block_until_ready(), number=repeats
         )
 
         table[row, col] = t / repeats
