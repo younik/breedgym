@@ -30,7 +30,7 @@ def _random_selection(
 class VecBreedGym(VectorEnv):
     def __init__(
         self,
-        num_envs: int,
+        num_envs: int = 1,
         initial_population: Union[str, Path, Population["n"]] = GENOME_FILE,
         individual_per_gen: Optional[int] = None,
         num_generations: int = 10,

@@ -13,10 +13,20 @@ from breedgym.vector import VecBreedGym
 
 
 class SelectionScores(VectorWrapper):
-    def __init__(self, vec_env: VecBreedGym, k: int, n_crosses: Optional[int] = None):
+    def __init__(
+        self,
+        vec_env: Optional[VecBreedGym] = None,
+        k: Optional[int] = None,
+        n_crosses: Optional[int] = None,
+        **kwargs,
+    ):
+        if vec_env is None:
+            vec_env = VecBreedGym(**kwargs)
         super().__init__(vec_env)
 
-        if k > self.individual_per_gen:
+        if k is None:
+            k = self.individual_per_gen // 10
+        elif k > self.individual_per_gen:
             raise ValueError(
                 f"Cannot select {k} best from a population of ",
                 f"{self.individual_per_gen} individuals",
@@ -76,7 +86,9 @@ class SelectionScores(VectorWrapper):
 
 
 class PairScores(VectorWrapper):
-    def __init__(self, vec_env: VecBreedGym):
+    def __init__(self, vec_env: Optional[VecBreedGym] = None, **kwargs):
+        if vec_env is None:
+            vec_env = VecBreedGym(**kwargs)
         super().__init__(vec_env)
 
         self.n_crosses = self.individual_per_gen

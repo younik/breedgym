@@ -1,18 +1,20 @@
 import warnings
 
+import gymnasium as gym
 import jax
 import numpy as np
 import pytest
 from chromax.sample_data import genetic_map, genome
 
 from breedgym.vector.vec_env import DistributedBreedGym, VecBreedGym
-from breedgym.vector.vec_wrappers import PairScores, SelectionScores
+from breedgym.vector.vec_wrappers import SelectionScores
 
 
 def test_vec():
     num_envs = 8
     individual_per_gen = 200
-    env = VecBreedGym(
+    env = gym.make(
+        "VecBreedGym",
         num_envs=num_envs,
         initial_population=genome,
         genetic_map=genetic_map,
@@ -41,14 +43,15 @@ def test_vec():
 def test_selection_vec():
     num_envs = 8
     individual_per_gen = 210
-    env = VecBreedGym(
+    env = gym.make(
+        "SelectionScores",
+        k=10,
         num_envs=num_envs,
         initial_population=genome,
         genetic_map=genetic_map,
         individual_per_gen=individual_per_gen,
         trait_names=["Yield"],
     )
-    env = SelectionScores(env, k=10)
 
     pop, _ = env.reset()
     expected_shape = (num_envs, individual_per_gen, env.simulator.n_markers, 2)
@@ -112,7 +115,8 @@ def test_distributed_env():
 def test_vec_deterministic():
     num_envs = 4
     individual_per_gen = 200
-    env = VecBreedGym(
+    env = gym.make(
+        "VecBreedGym",
         num_envs=num_envs,
         initial_population=genome,
         genetic_map=genetic_map,
@@ -132,14 +136,15 @@ def test_vec_deterministic():
 def test_vec_gebv_policy():
     num_envs = 4
     individual_per_gen = 200
-    env = VecBreedGym(
+    env = gym.make(
+        "SelectionScores",
+        k=10,
         num_envs=num_envs,
         initial_population=genome,
         genetic_map=genetic_map,
         individual_per_gen=individual_per_gen,
         trait_names=["Yield"],
     )
-    env = SelectionScores(env, k=10)
 
     _, infos = env.reset(seed=7)
     for _ in range(10):
@@ -160,34 +165,34 @@ def test_vec_wrapper_n_crosses():
         trait_names=["Yield"],
     )
 
-    env = SelectionScores(env, k=10, n_crosses=20)
-    _, infos = env.reset(seed=7)
-    pop, _, _, _, _ = env.step(infos["GEBV"].squeeze())
+    wrap_env = SelectionScores(env, k=10, n_crosses=20)
+    _, infos = wrap_env.reset(seed=7)
+    pop, _, _, _, _ = wrap_env.step(infos["GEBV"].squeeze())
     assert pop.shape[1] == individual_per_gen
 
     with pytest.raises(ValueError):
-        env = SelectionScores(env, k=100, n_crosses=201)
+        wrap_env = SelectionScores(env, k=100, n_crosses=201)
 
     with pytest.raises(ValueError):
-        env = SelectionScores(env, k=2, n_crosses=10)
+        wrap_env = SelectionScores(env, k=2, n_crosses=10)
 
     with pytest.raises(ValueError):
-        env = SelectionScores(env, k=1, n_crosses=1)
+        wrap_env = SelectionScores(env, k=1, n_crosses=1)
 
     with pytest.raises(ValueError):
-        env = SelectionScores(env, k=500, n_crosses=10)
+        wrap_env = SelectionScores(env, k=500, n_crosses=10)
 
 
 def test_vec_pair_score():
     num_envs = 4
     individual_per_gen = 200
-    env = VecBreedGym(
+    env = gym.make(
+        "PairScores",
         num_envs=num_envs,
         initial_population=genome,
         genetic_map=genetic_map,
         individual_per_gen=individual_per_gen,
     )
-    env = PairScores(env)
 
     _, infos = env.reset(seed=7)
     for _ in range(10):
