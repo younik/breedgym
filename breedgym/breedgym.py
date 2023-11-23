@@ -17,7 +17,7 @@ from breedgym.utils.paths import DATA_PATH
 from breedgym.utils.plot_utils import NEURIPS_FONT_FAMILY, set_up_plt
 
 
-GENOME_FILE = DATA_PATH.joinpath("wheat_genome.npy")
+GENOME_FILE = DATA_PATH.joinpath("small_geno.npy")
 
 
 class BreedGym(gym.Env):

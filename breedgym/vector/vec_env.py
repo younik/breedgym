@@ -16,7 +16,7 @@ from jaxtyping import Array, Bool, Float, Int
 from breedgym.utils.paths import DATA_PATH
 
 
-GENOME_FILE = DATA_PATH.joinpath("geno.txt")
+GENOME_FILE = DATA_PATH.joinpath("small_geno.npy")
 
 
 @partial(jax.jit, static_argnums=1)
