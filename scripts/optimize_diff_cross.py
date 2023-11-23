@@ -8,15 +8,6 @@ from breedgym.simulator.simulator import BreedingSimulator
 from breedgym.utils.paths import DATA_PATH
 
 
-budgets = [30, 20, 10, 5]
-population = np.random.choice(a=[0.0, 1.0], size=(budgets[0], 10_000, 2), p=[0.5, 0.5])
-
-simulator = BreedingSimulator(genetic_map=DATA_PATH.joinpath("small_genetic_map.txt"))
-
-marker_effects = simulator.GEBV_model.marker_effects
-diff_cross = simulator.differentiable_cross_func
-
-
 def breeding_func(population, params, key):
     current_pop = population
     for current_w in params.values():
@@ -35,32 +26,44 @@ def normalize_params(params):
         params[k] /= np.linalg.norm(params[k], axis=1, keepdims=True, ord=1)
 
 
-d_loss = jax.grad(loss, argnums=1)
+if __name__ == "__main__":
+    budgets = [30, 20, 10, 5]
+    population = np.random.choice(
+        a=[0.0, 1.0], size=(budgets[0], 10_000, 2), p=[0.5, 0.5]
+    )
 
-params = {}
-for gen in range(1, len(budgets)):
-    gen_w = np.random.rand(budgets[gen], budgets[gen - 1], 2)
-    params[f"w_{gen}"] = gen_w
-normalize_params(params)
+    simulator = BreedingSimulator(
+        genetic_map=DATA_PATH.joinpath("small_genetic_map.txt")
+    )
 
-n_steps = int(5e2)
-lr = 1e-3
-optimizer = optax.adam(lr)
-opt_state = optimizer.init(params)
-values = np.empty(n_steps)
+    marker_effects = simulator.GEBV_model.marker_effects
+    diff_cross = simulator.differentiable_cross_func
 
-for i in range(n_steps):
-    print(i, flush=True)
-    key = jax.random.PRNGKey(np.random.randint(2**32))
-    grads = d_loss(population, params, key)
+    d_loss = jax.grad(loss, argnums=1)
 
-    updates, opt_state = optimizer.update(grads, opt_state)
-    params = optax.apply_updates(params, updates)
+    params = {}
+    for gen in range(1, len(budgets)):
+        gen_w = np.random.rand(budgets[gen], budgets[gen - 1], 2)
+        params[f"w_{gen}"] = gen_w
     normalize_params(params)
 
-    key2 = jax.random.PRNGKey(np.random.randint(2**32))
-    values[i] = breeding_func(population, params, key2)
+    n_steps = int(5e2)
+    lr = 1e-3
+    optimizer = optax.adam(lr)
+    opt_state = optimizer.init(params)
+    values = np.empty(n_steps)
 
+    for i in range(n_steps):
+        print(i, flush=True)
+        key = jax.random.PRNGKey(np.random.randint(2**32))
+        grads = d_loss(population, params, key)
 
-plt.plot(np.arange(n_steps), values)
-plt.savefig("test.png")
+        updates, opt_state = optimizer.update(grads, opt_state)
+        params = optax.apply_updates(params, updates)
+        normalize_params(params)
+
+        key2 = jax.random.PRNGKey(np.random.randint(2**32))
+        values[i] = breeding_func(population, params, key2)
+
+    plt.plot(np.arange(n_steps), values)
+    plt.savefig("test.png")
