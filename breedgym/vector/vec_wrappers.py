@@ -121,7 +121,9 @@ class PairScores(VectorWrapper):
         dict,
     ]:
         low_level_actions = self._convert_actions(actions)
-        return super().step(low_level_actions)
+        obs, rew, ter, tru, infos = super().step(low_level_actions)
+        infos["low_level_actions"] = low_level_actions
+        return obs, rew, ter, tru, infos
 
 
 class RavelIndex(VectorWrapper):
