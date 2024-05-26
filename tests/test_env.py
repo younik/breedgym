@@ -6,7 +6,7 @@ from chromax.sample_data import genetic_map, genome
 
 def test_reset_population():
     env = gym.make(
-        "BreedGym",
+        "breedgym:BreedGym",
         initial_population=genome,
         genetic_map=genetic_map,
     )
@@ -22,7 +22,7 @@ def test_reset_population():
 @pytest.mark.parametrize("n", [1, 5, 10])
 def test_num_progenies(n):
     env = gym.make(
-        "BreedGym",
+        "breedgym:BreedGym",
         initial_population=genome,
         genetic_map=genetic_map,
     )
@@ -36,15 +36,15 @@ def test_num_progenies(n):
 
 def test_caching():
     env = gym.make(
-        "BreedGym",
+        "breedgym:BreedGym",
         initial_population=genome,
         genetic_map=genetic_map,
     )
     env.reset()
 
-    GEBV = env.GEBV
+    GEBV = env.unwrapped.GEBV
     GEBV_copy = np.copy(GEBV)
-    GEBV2 = env.GEBV
+    GEBV2 = env.unwrapped.GEBV
     assert id(GEBV) == id(GEBV2)
     assert np.all(GEBV_copy == GEBV2)
 
@@ -57,7 +57,7 @@ def test_caching():
     action = np.array([[1, 3], [4, 2]])
     env.step(action)
 
-    GEBV3 = env.GEBV
+    GEBV3 = env.unwrapped.GEBV
     corrcoef3 = env.corrcoef
     assert id(corrcoef) != id(corrcoef3)
     assert id(GEBV) != id(GEBV3)
@@ -65,7 +65,7 @@ def test_caching():
 
 def test_reward_shaping():
     env = gym.make(
-        "BreedGym",
+        "breedgym:BreedGym",
         initial_population=genome,
         genetic_map=genetic_map,
         reward_shaping=False,
@@ -87,7 +87,7 @@ def test_reward_shaping():
     assert truncated
 
     env2 = gym.make(
-        "BreedGym",
+        "breedgym:BreedGym",
         initial_population=genome,
         genetic_map=genetic_map,
         reward_shaping=True,
@@ -102,7 +102,7 @@ def test_reward_shaping():
 
 def test_deterministic():
     env = gym.make(
-        "BreedGym",
+        "breedgym:BreedGym",
         initial_population=genome,
         genetic_map=genetic_map,
         reward_shaping=False,
@@ -116,4 +116,4 @@ def test_deterministic():
     for _ in range(10):
         _, r, _, _, _ = env.step(action)
 
-    assert abs(r - (1.6602371)) < 1e-6
+    assert abs(r - (1.8197979)) < 1e-6

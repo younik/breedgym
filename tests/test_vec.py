@@ -129,7 +129,7 @@ def test_vec_deterministic():
         action = np.random.randint(len(pop), size=(num_envs, individual_per_gen, 2))
         pop, rews, _, _, _ = env.step(action)
 
-    expected_result = np.array([11.618341, 11.29245, 13.47926, 10.03809])
+    expected_result = np.array([10.844662, 8.436224, 8.759013, 9.1480465])
     assert np.allclose(rews, expected_result)
 
 
@@ -150,7 +150,7 @@ def test_vec_gebv_policy():
     for _ in range(10):
         _, rews, _, _, infos = env.step(infos["GEBV"].squeeze())
 
-    expected_result = np.array([20.43854, 21.59488, 20.503202, 21.617622])
+    expected_result = np.array([18.514063, 19.428415, 19.090204, 19.841211])
     assert np.allclose(rews, expected_result)
 
 
@@ -200,5 +200,5 @@ def test_vec_pair_score():
         gebvs_matrix_sum = np.add.outer(gebvs, gebvs)
         _, rews, _, _, infos = env.step(gebvs_matrix_sum)
 
-    expected_result = np.array([13.162314, 10.155096, 12.45827, 12.093216])
+    expected_result = np.array([8.650201, 9.414795, 8.115064, 10.0190525])
     assert np.allclose(rews, expected_result)

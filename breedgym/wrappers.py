@@ -72,7 +72,7 @@ class SimplifiedBreedGym(gym.Wrapper):
         if n_crosses > self.individual_per_gen:
             raise ValueError("n_crosses must be lower or equal to individual_per_gen")
 
-        self.unwrapped.population = self.simulator.select(
+        self.unwrapped.population, _ = self.simulator.select(
             population=self.env.population, k=n_bests, f_index=self.f_index
         )
 

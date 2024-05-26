@@ -13,33 +13,33 @@ def wheat_schema(
     germplasm,
     factor=1,
 ):
-    f1 = simulator.random_crosses(germplasm, 200 * factor)
+    f1, _ = simulator.random_crosses(germplasm, 200 * factor)
     dh_lines = simulator.double_haploid(f1, n_offspring=100)
 
     dh_lines = dh_lines.reshape(200 * factor, 100, *dh_lines.shape[1:])
-    vmap_select = jax.vmap(simulator.select, (0, None, None))
+    vmap_select, _ = jax.vmap(simulator.select, (0, None, None))
     headrows = vmap_select(dh_lines, 5, visual_selection(simulator, seed=7))
     headrows = headrows.reshape(1000 * factor, -1, 2)
-    # hdrw_next_year = simulator.select(
+    # hdrw_next_year, _ = simulator.select(
     #     dh_lines,
     #     k=20,
     #     f_index=visual_selection(simulator, seed=7)
     # )
 
     envs = simulator.create_environments(num_environments=16)
-    pyt = simulator.select(
+    pyt, _ = simulator.select(
         headrows, k=100 * factor, f_index=phenotype_index(simulator, envs[0])
     )
-    # pyt_next_year = simulator.select(
+    # pyt_next_year, _ = simulator.select(
     #     headrows,
     #     k=20,
     #     f_index=phenotype_index(simulator, envs[0])
     # )
-    ayt = simulator.select(
+    ayt, _ = simulator.select(
         pyt, k=10 * factor, f_index=phenotype_index(simulator, envs[:4])
     )
 
-    released_variety = simulator.select(
+    released_variety, _ = simulator.select(
         ayt, k=1, f_index=phenotype_index(simulator, envs)
     )
 

@@ -7,7 +7,7 @@ from chromax.sample_data import genetic_map, genome
 def test_simplified_env():
     individual_per_gen = 200
     env = gym.make(
-        "SimplifiedBreedGym",
+        "breedgym:SimplifiedBreedGym",
         individual_per_gen=individual_per_gen,
         initial_population=genome,
         genetic_map=genetic_map,
@@ -46,7 +46,7 @@ def test_simplified_env():
 def test_kbest_env():
     individual_per_gen = 200
     env = gym.make(
-        "KBestBreedGym",
+        "breedgym:KBestBreedGym",
         individual_per_gen=individual_per_gen,
         initial_population=genome,
         genetic_map=genetic_map,
@@ -73,7 +73,7 @@ def test_kbest_env():
 def test_gebv_policy():
     individual_per_gen = 200
     env = gym.make(
-        "KBestBreedGym",
+        "breedgym:KBestBreedGym",
         individual_per_gen=individual_per_gen,
         initial_population=genome,
         genetic_map=genetic_map,
@@ -85,4 +85,4 @@ def test_gebv_policy():
     for _ in range(10):
         _, r, _, _, _ = env.step(action)
 
-    assert abs(r - 20.315035) < 1e-5
+    assert abs(r - 18.826475) < 1e-5

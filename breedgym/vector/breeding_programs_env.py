@@ -42,7 +42,7 @@ class WheatBreedGym(VectorWrapper):
 
     @partial(jax.vmap, in_axes=(None, 0))
     def _select_line(self, pop):
-        return self.simulator.select(pop, k=self.k_per_line)
+        return self.simulator.select(pop, k=self.k_per_line)[0]
 
     def step(self, actions):
         actions = self._convert_actions(actions)
@@ -53,7 +53,7 @@ class WheatBreedGym(VectorWrapper):
         pop = self._double_haploid(pop)
         pop = self._select_line(pop)
         pop = pop.reshape(pop.shape[0], pop.shape[1] * pop.shape[2], *pop.shape[3:])
-        self.env.populations = self.simulator.select(pop, k=self.individual_per_gen)
+        self.env.populations, _ = self.simulator.select(pop, k=self.individual_per_gen)
 
         self.env.step_idx += 1
         infos = self.get_info()
