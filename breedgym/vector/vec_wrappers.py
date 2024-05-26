@@ -60,7 +60,7 @@ class SelectionScores(VectorWrapper):
 
     @partial(jax.vmap, in_axes=(None, 0, 0))
     def _convert_actions(
-        self, action: Float[Array, "n"], random_key: jax.random.PRNGKeyArray
+        self, action: Float[Array, "n"], random_key: jax.Array
     ) -> Int[Array, "n 2"]:
         _, best_pop = jax.lax.top_k(action, self.k)
         diallel_indices = self.simulator._diallel_indices(best_pop)

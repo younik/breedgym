@@ -55,14 +55,14 @@ if __name__ == "__main__":
 
     for i in range(n_steps):
         print(i, flush=True)
-        key = jax.random.PRNGKey(np.random.randint(2**32))
+        key = jax.random.key(np.random.randint(2**32))
         grads = d_loss(population, params, key)
 
         updates, opt_state = optimizer.update(grads, opt_state)
         params = optax.apply_updates(params, updates)
         normalize_params(params)
 
-        key2 = jax.random.PRNGKey(np.random.randint(2**32))
+        key2 = jax.random.key(np.random.randint(2**32))
         values[i] = breeding_func(population, params, key2)
 
     plt.plot(np.arange(n_steps), values)

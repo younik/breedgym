@@ -22,7 +22,7 @@ GENOME_FILE = DATA_PATH.joinpath("small_geno.npy")
 @partial(jax.jit, static_argnums=1)
 @partial(jax.vmap, in_axes=(None, None, 0))
 def _random_selection(
-    germplasm: Population["n"], length: int, key: jax.random.PRNGKeyArray
+    germplasm: Population["n"], length: int, key: jax.Array
 ) -> Population["length"]:
     return jax.random.choice(key, germplasm, shape=(length,), replace=False)
 
@@ -112,10 +112,10 @@ class VecBreedGym(VectorEnv):
         self.step_idx = 0
         if seed is not None:
             self.simulator.set_seed(seed)
-            self.random_key = jax.random.PRNGKey(seed)
+            self.random_key = jax.random.key(seed)
         elif self.random_key is None:
             seed = np.random.randint(2**32)
-            self.random_key = jax.random.PRNGKey(seed)
+            self.random_key = jax.random.key(seed)
 
         keys = jax.random.split(self.random_key, num=self.num_envs + 1)
         self.random_key = keys[0]
