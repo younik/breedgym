@@ -8,17 +8,17 @@ build-backend = "setuptools.build_meta"
 name = "breedgym"
 description = "Suite of Gymnasium environments for optimizing breeding programs"
 readme = "README.md"
-requires-python = ">= 3.8"
+requires-python = ">= 3.9"
 authors = [{ name = "Omar G. Younis", email = "omar.g.younis@gmail.com" }]
 license = { text = "BSD-3-Clause" }
 keywords = ["Reinforcement Learning", "Breeding", "genetics", "bioinformatics"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     'Intended Audience :: Science/Research',
 ]
 dependencies = ["numpy", "pandas", "matplotlib", "chromax", "gymnasium>=0.29", "jax", "jaxtyping"]

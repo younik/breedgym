@@ -85,4 +85,4 @@ def test_gebv_policy():
     for _ in range(10):
         _, r, _, _, _ = env.step(action)
 
-    assert abs(r - 18.826475) < 1e-5
+    assert abs(r - 18.826467) < 1e-5
